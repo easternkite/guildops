@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateAttendanceDto, CreateCheckInDto, UpdateAttendanceDto } from './dto/attendance.dto';
 
@@ -25,7 +25,8 @@ export class AttendanceService {
     return found;
   }
 
-  async create(body: CreateAttendanceDto) {
+  async create(body: CreateAttendanceDto, actorRole?: string) {
+    this.assertRole(actorRole, ['OWNER', 'ADMIN']);
     await this.ensureGuildExists(body.guildId);
 
     return this.prisma.attendance.create({
@@ -39,7 +40,8 @@ export class AttendanceService {
     });
   }
 
-  async update(id: string, body: UpdateAttendanceDto) {
+  async update(id: string, body: UpdateAttendanceDto, actorRole?: string) {
+    this.assertRole(actorRole, ['OWNER', 'ADMIN']);
     await this.ensureAttendanceExists(id);
 
     return this.prisma.attendance.update({
@@ -53,7 +55,8 @@ export class AttendanceService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorRole?: string) {
+    this.assertRole(actorRole, ['OWNER']);
     await this.ensureAttendanceExists(id);
     await this.prisma.attendanceCheckIn.deleteMany({ where: { attendanceId: id } });
     await this.prisma.attendance.delete({ where: { id } });
@@ -68,7 +71,12 @@ export class AttendanceService {
     });
   }
 
-  async recordCheckIn(attendanceId: string, body: CreateCheckInDto) {
+  async recordCheckIn(attendanceId: string, body: CreateCheckInDto, actorRole?: string, actorMemberId?: string) {
+    this.assertRole(actorRole, ['OWNER', 'ADMIN', 'MEMBER']);
+    if (actorRole === 'MEMBER' && actorMemberId !== body.memberId) {
+      throw new ForbiddenException('Members can only check in themselves');
+    }
+
     const attendance = await this.prisma.attendance.findUnique({ where: { id: attendanceId } });
     if (!attendance) throw new NotFoundException(`Attendance ${attendanceId} not found`);
 
@@ -107,5 +115,13 @@ export class AttendanceService {
   private async ensureGuildExists(id: string) {
     const found = await this.prisma.guild.findUnique({ where: { id }, select: { id: true } });
     if (!found) throw new BadRequestException(`Guild ${id} does not exist`);
+  }
+
+  private assertRole(actorRole: string | undefined, allowedRoles: string[]) {
+    if (!actorRole) throw new UnauthorizedException('Missing actor role');
+    const normalizedRole = actorRole.toUpperCase();
+    if (!allowedRoles.includes(normalizedRole)) {
+      throw new ForbiddenException(`Role ${normalizedRole} is not allowed`);
+    }
   }
 }
