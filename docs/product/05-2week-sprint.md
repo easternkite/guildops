@@ -40,15 +40,15 @@
 
 ## 4) 일자별 실행 계획
 
-| Day | 날짜 | 목표 | 산출물 |
-|---|---|---|---|
-| D1 | 2026-02-16 | 스프린트 킥오프/설계 확정 | API 전환 상세 설계 노트 |
-| D2-D3 | 2026-02-17~18 | BE-01 구현 | `events` DB CRUD PR |
-| D4-D5 | 2026-02-19~20 | BE-02 구현 | `announcements` DB CRUD PR |
-| D6 | 2026-02-23 | FE-01 시작 | 대시보드 KPI 카드 초안 |
-| D7-D8 | 2026-02-24~25 | FE-02/FE-03 구현 | 운영 UI PR |
-| D9 | 2026-02-26 | QA-01/QA-02 실행 | 테스트 리포트 |
-| D10 | 2026-02-27 | 안정화/회고 | 릴리즈 노트 + 다음 스프린트 백로그 |
+| Day | 날짜 | 목표 | 산출물 | 검증 커맨드 |
+|---|---|---|---|---|
+| D1 | 2026-02-16 | 스프린트 킥오프/설계 확정 | API 전환 상세 설계 노트 | `pnpm lint` |
+| D2-D3 | 2026-02-17~18 | BE-01 구현 | `events` DB CRUD PR | `pnpm --filter @guildops/api test && pnpm --filter @guildops/api build` |
+| D4-D5 | 2026-02-19~20 | BE-02 구현 | `announcements` DB CRUD PR | `pnpm --filter @guildops/api test && pnpm --filter @guildops/api build` |
+| D6 | 2026-02-23 | FE-01 시작 | 대시보드 KPI 카드 초안 | `pnpm --filter @guildops/web lint && pnpm --filter @guildops/web build` |
+| D7-D8 | 2026-02-24~25 | FE-02/FE-03 구현 | 운영 UI PR | `pnpm --filter @guildops/web lint && pnpm --filter @guildops/web build` |
+| D9 | 2026-02-26 | QA-01/QA-02 실행 | 테스트 리포트 | `pnpm --filter @guildops/api test && pnpm test` |
+| D10 | 2026-02-27 | 안정화/회고 | 릴리즈 노트 + 다음 스프린트 백로그 | `pnpm lint && pnpm test && pnpm build` |
 
 ## 5) Definition of Done (DoD)
 
