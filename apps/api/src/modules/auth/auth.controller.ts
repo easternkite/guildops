@@ -47,4 +47,9 @@ export class AuthController {
       callbackURL: process.env.DISCORD_CALLBACK_URL ?? 'http://localhost:4000/api/auth/discord/callback',
     };
   }
+
+  @Get('demo/checklist-health')
+  demoChecklistHealth() {
+    return this.authService.getDemoChecklistHealth();
+  }
 }
