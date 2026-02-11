@@ -1,4 +1,5 @@
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
+import { ReleaseReadinessCard } from '../../components/release-readiness-card';
 import { getList } from '../../lib/api';
 
 type Attendance = { id: string; checkInCount?: number };
@@ -83,6 +84,8 @@ export default async function DashboardPage() {
           ) : null}
           <p className="kpi-note"><a href="/demo-status">상세 상태 보기</a></p>
         </article>
+
+        <ReleaseReadinessCard />
       </section>
     </main>
   );
