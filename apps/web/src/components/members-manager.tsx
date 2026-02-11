@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { updateItem } from '../lib/api';
+import { toUserError, updateItem } from '../lib/api';
 
 type Member = {
   id: string;
@@ -15,6 +15,7 @@ export function MembersManager({ initialItems }: { initialItems: Member[] }) {
   const [items, setItems] = useState<Member[]>(initialItems);
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | string>('ALL');
+  const [error, setError] = useState('');
 
   const roleOptions = useMemo(
     () => Array.from(new Set(items.map((item) => item.role))).sort(),
@@ -31,14 +32,21 @@ export function MembersManager({ initialItems }: { initialItems: Member[] }) {
   }, [items, query, roleFilter]);
 
   async function toggleActive(member: Member) {
-    const updated = await updateItem(`members/${member.id}`, { active: !member.active });
-    setItems((prev) => prev.map((item) => (item.id === member.id ? updated : item)));
+    setError('');
+    try {
+      const updated = await updateItem(`members/${member.id}`, { active: !member.active });
+      setItems((prev) => prev.map((item) => (item.id === member.id ? updated : item)));
+    } catch (e) {
+      setError(toUserError(e));
+    }
   }
 
   return (
     <section>
       <h2>Members</h2>
       <p className="dashboard-subtitle">테이블/검색/역할 필터/active 토글</p>
+
+      {error ? <p className="message error">{error}</p> : null}
 
       <div style={{ display: 'flex', gap: 8, margin: '10px 0 14px' }}>
         <input
