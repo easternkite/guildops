@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { FeedbackCapture } from '../components/feedback-capture';
 import './globals.css';
 
 const navItems = [
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <strong>GuildOps Console</strong>
               <span className="topbar-note">MVP Stabilization</span>
             </header>
+            <FeedbackCapture />
             <main className="content">{children}</main>
           </div>
         </div>
