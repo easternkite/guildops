@@ -140,6 +140,7 @@ describe('GuildOps API smoke', () => {
   it('attendance CRUD/check-in flow works', async () => {
     const create = await request(app.getHttpServer())
       .post('/api/attendance')
+      .set('x-guild-role', 'OWNER')
       .send({ guildId: 'g1', game: 'Lost Ark', title: 'Week 1 raid', startsAt: new Date().toISOString() })
       .expect(201);
 
@@ -147,17 +148,30 @@ describe('GuildOps API smoke', () => {
 
     await request(app.getHttpServer())
       .post(`/api/attendance/${attendanceId}/check-ins`)
+      .set('x-guild-role', 'MEMBER')
+      .set('x-member-id', 'm1')
       .send({ memberId: 'm1', status: 'checked_in', note: 'On time' })
       .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/api/attendance/${attendanceId}/check-ins`)
+      .set('x-guild-role', 'MEMBER')
+      .set('x-member-id', 'm1')
+      .send({ memberId: 'm999', status: 'checked_in' })
+      .expect(403);
 
     const detail = await request(app.getHttpServer()).get(`/api/attendance/${attendanceId}`).expect(200);
     expect(detail.body.checkIns).toHaveLength(1);
 
     await request(app.getHttpServer())
       .patch(`/api/attendance/${attendanceId}`)
+      .set('x-guild-role', 'ADMIN')
       .send({ status: 'closed' })
       .expect(200);
 
-    await request(app.getHttpServer()).delete(`/api/attendance/${attendanceId}`).expect(200);
+    await request(app.getHttpServer())
+      .delete(`/api/attendance/${attendanceId}`)
+      .set('x-guild-role', 'OWNER')
+      .expect(200);
   });
 });

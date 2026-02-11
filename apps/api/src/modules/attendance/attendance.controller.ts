@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto, CreateCheckInDto, UpdateAttendanceDto } from './dto/attendance.dto';
 
@@ -17,18 +17,18 @@ export class AttendanceController {
   }
 
   @Post()
-  create(@Body() body: CreateAttendanceDto) {
-    return this.service.create(body);
+  create(@Body() body: CreateAttendanceDto, @Headers('x-guild-role') actorRole?: string) {
+    return this.service.create(body, actorRole);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateAttendanceDto) {
-    return this.service.update(id, body);
+  update(@Param('id') id: string, @Body() body: UpdateAttendanceDto, @Headers('x-guild-role') actorRole?: string) {
+    return this.service.update(id, body, actorRole);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.service.remove(id);
+  remove(@Param('id') id: string, @Headers('x-guild-role') actorRole?: string) {
+    return this.service.remove(id, actorRole);
   }
 
   @Get(':id/check-ins')
@@ -37,7 +37,12 @@ export class AttendanceController {
   }
 
   @Post(':id/check-ins')
-  recordCheckIn(@Param('id') id: string, @Body() body: CreateCheckInDto) {
-    return this.service.recordCheckIn(id, body);
+  recordCheckIn(
+    @Param('id') id: string,
+    @Body() body: CreateCheckInDto,
+    @Headers('x-guild-role') actorRole?: string,
+    @Headers('x-member-id') actorMemberId?: string,
+  ) {
+    return this.service.recordCheckIn(id, body, actorRole, actorMemberId);
   }
 }
