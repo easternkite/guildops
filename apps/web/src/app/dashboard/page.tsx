@@ -3,12 +3,14 @@ import { getList } from '../../lib/api';
 type Attendance = { id: string; checkInCount?: number };
 type Member = { id: string; active?: boolean };
 type Event = { id: string; title: string; startsAt: string; status?: string };
+type Health = { ok?: boolean; status?: string; message?: string };
 
 export default async function DashboardPage() {
-  const [attendance, members, events] = await Promise.all([
+  const [attendance, members, events, health] = await Promise.all([
     getList('attendance').catch(() => [] as Attendance[]),
     getList('members').catch(() => [] as Member[]),
     getList('events').catch(() => [] as Event[]),
+    getList('auth/discord/health').catch(() => null as Health | null),
   ]);
 
   const attendanceCount = attendance.length;
@@ -21,6 +23,8 @@ export default async function DashboardPage() {
   const recentEvent = [...events]
     .sort((a: Event, b: Event) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .find((event: Event) => event.status !== 'done' && event.status !== 'closed');
+
+  const healthStatus = health?.ok ?? health?.status === 'ok';
 
   return (
     <main>
@@ -52,6 +56,14 @@ export default async function DashboardPage() {
           <p className="kpi-note">
             {recentEvent ? new Date(recentEvent.startsAt).toLocaleString('ko-KR') : '이벤트를 등록해 보세요'}
           </p>
+        </article>
+
+        <article className="kpi-card">
+          <h3>운영 상태</h3>
+          <p className={`kpi-value kpi-value-small ${healthStatus ? 'status-ok' : 'status-warn'}`}>
+            {healthStatus ? 'API 정상' : 'API 점검 필요'}
+          </p>
+          <p className="kpi-note">{healthStatus ? 'Discord auth health check 통과' : health?.message ?? 'health endpoint 실패'}</p>
         </article>
       </section>
     </main>
