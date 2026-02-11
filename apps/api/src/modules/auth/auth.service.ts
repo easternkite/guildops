@@ -55,4 +55,35 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found');
     return user;
   }
+
+  async getDemoChecklistHealth() {
+    const [guild, members, event, attendance, announcement, reward, auditLog] = await Promise.all([
+      this.prisma.guild.findUnique({ where: { id: 'seed-guild-kr' }, select: { id: true } }),
+      this.prisma.member.count({ where: { id: { in: ['seed-member-1', 'seed-member-2', 'seed-member-3'] } } }),
+      this.prisma.event.findUnique({ where: { id: 'seed-event-weekly-raid' }, select: { id: true } }),
+      this.prisma.attendance.findUnique({ where: { id: 'seed-attendance-weekly-raid' }, select: { id: true } }),
+      this.prisma.announcement.findUnique({ where: { id: 'seed-announcement-1' }, select: { id: true } }),
+      this.prisma.reward.findUnique({ where: { id: 'seed-reward-1' }, select: { id: true } }),
+      this.prisma.auditLog.findUnique({ where: { id: 'seed-audit-1' }, select: { id: true } }),
+    ]);
+
+    const checks = {
+      guild: Boolean(guild),
+      members: members >= 3,
+      event: Boolean(event),
+      attendance: Boolean(attendance),
+      announcement: Boolean(announcement),
+      reward: Boolean(reward),
+      auditLog: Boolean(auditLog),
+    };
+
+    const ok = Object.values(checks).every(Boolean);
+    return {
+      ok,
+      checks,
+      missing: Object.entries(checks)
+        .filter(([, passed]) => !passed)
+        .map(([name]) => name),
+    };
+  }
 }
