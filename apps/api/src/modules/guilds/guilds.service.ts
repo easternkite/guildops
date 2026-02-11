@@ -1,11 +1,43 @@
-import crypto from "node:crypto";
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../common/prisma/prisma.service';
+
 @Injectable()
 export class UguildsService {
-  private data: any[] = [];
-  findAll() { return this.data; }
-  findOne(id: string) { return this.data.find((v) => v.id === id); }
-  create(body: any) { const row = { id: crypto.randomUUID(), ...body }; this.data.push(row); return row; }
-  update(id: string, body: any) { const i = this.data.findIndex((v) => v.id === id); if (i < 0) return null; this.data[i] = { ...this.data[i], ...body }; return this.data[i]; }
-  remove(id: string) { this.data = this.data.filter((v) => v.id !== id); return { deleted: true }; }
+  constructor(private readonly prisma: PrismaService) {}
+
+  findAll() {
+    return this.prisma.guild.findMany({ orderBy: { name: 'asc' } });
+  }
+
+  async findOne(id: string) {
+    const found = await this.prisma.guild.findUnique({ where: { id } });
+    if (!found) throw new NotFoundException(`Guild ${id} not found`);
+    return found;
+  }
+
+  create(body: { name: string; game: string }) {
+    return this.prisma.guild.create({
+      data: {
+        name: body.name,
+        game: body.game,
+      },
+    });
+  }
+
+  async update(id: string, body: { name?: string; game?: string }) {
+    await this.findOne(id);
+    return this.prisma.guild.update({
+      where: { id },
+      data: {
+        name: body.name,
+        game: body.game,
+      },
+    });
+  }
+
+  async remove(id: string) {
+    await this.findOne(id);
+    await this.prisma.guild.delete({ where: { id } });
+    return { deleted: true };
+  }
 }
