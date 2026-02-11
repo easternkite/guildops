@@ -34,6 +34,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <header className="topbar">
               <strong>GuildOps Console</strong>
               <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <a className="topbar-note" href="/release-signoff">Signoff</a>
+                <a className="topbar-note" href="/demo-status">Demo</a>
+                <a className="topbar-note" href="/feedback">Feedback</a>
                 <a className="topbar-note" href="https://github.com/easternkite/guildops/blob/main/RUNBOOK.md" target="_blank" rel="noreferrer">
                   RUNBOOK
                 </a>
