@@ -11,6 +11,7 @@ const navItems = [
   { href: '/attendance', label: 'Attendance' },
   { href: '/feedback', label: 'Feedback' },
   { href: '/demo-status', label: 'Demo Status' },
+  { href: '/release-signoff', label: 'Release Signoff' },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
