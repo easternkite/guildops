@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 REPORT_DIR="$ROOT_DIR/docs/rehearsal-reports"
 TS="$(date +%Y%m%d-%H%M%S)"
 REPORT_PATH="$REPORT_DIR/rehearsal-$TS.md"
+INDEX_PATH="$REPORT_DIR/index.md"
 
 mkdir -p "$REPORT_DIR"
 
@@ -55,5 +56,19 @@ run_step "Demo Seed" bash -lc "cd '$ROOT_DIR/apps/api' && npx pnpm seed:demo"
   echo "- result: PASS"
   echo "- report: $REPORT_PATH"
 } >> "$REPORT_PATH"
+
+{
+  echo "# Rehearsal Reports Index"
+  echo
+  echo "- updatedAt: $(date -Iseconds)"
+  echo
+  echo "## Reports"
+  ls -1t "$REPORT_DIR"/rehearsal-*.md 2>/dev/null | head -n 50 | while read -r file; do
+    base="$(basename "$file")"
+    ts="${base#rehearsal-}"
+    ts="${ts%.md}"
+    echo "- [$base](./$base) · $ts"
+  done
+} > "$INDEX_PATH"
 
 echo "$REPORT_PATH"
