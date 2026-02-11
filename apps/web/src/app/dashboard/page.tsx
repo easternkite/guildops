@@ -77,6 +77,7 @@ export default async function DashboardPage() {
           {!checklistStatus && checklistMissing.length > 0 ? (
             <p className="kpi-note">누락: {checklistMissing.join(', ')}</p>
           ) : null}
+          <p className="kpi-note"><a href="/demo-status">상세 상태 보기</a></p>
         </article>
       </section>
     </main>
