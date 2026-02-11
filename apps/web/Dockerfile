@@ -18,10 +18,8 @@ RUN pnpm --filter @guildops/web build
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
-RUN corepack enable
-COPY --from=build /app/apps/web/.next ./apps/web/.next
+COPY --from=build /app/apps/web/.next/standalone ./
+COPY --from=build /app/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /app/apps/web/public ./apps/web/public
-COPY --from=build /app/apps/web/package.json ./apps/web/package.json
-COPY --from=deps /app/node_modules ./node_modules
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@guildops/web", "start"]
+CMD ["node", "apps/web/server.js"]
