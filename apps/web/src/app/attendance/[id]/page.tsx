@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createItem, getList } from '../../../lib/api';
 
 type CheckIn = {
@@ -21,6 +21,7 @@ type Member = {
   id: string;
   nickname: string;
   role: string;
+  active: boolean;
 };
 
 export default function AttendanceCheckInsPage({ params }: { params: { id: string } }) {
@@ -29,6 +30,9 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
   const [memberId, setMemberId] = useState('');
   const [status, setStatus] = useState('checked_in');
   const [note, setNote] = useState('');
+  const [query, setQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | string>('ALL');
+  const [activeOnly, setActiveOnly] = useState(true);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -47,6 +51,27 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
   useEffect(() => {
     load().catch((e) => setError((e as Error).message));
   }, [load]);
+
+  const roleOptions = useMemo(
+    () => Array.from(new Set(members.map((member) => member.role))).sort(),
+    [members],
+  );
+
+  const filteredMembers = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+    return members.filter((member) => {
+      if (activeOnly && !member.active) return false;
+      if (roleFilter !== 'ALL' && member.role !== roleFilter) return false;
+      if (!keyword) return true;
+      return member.nickname.toLowerCase().includes(keyword) || member.id.toLowerCase().includes(keyword);
+    });
+  }, [members, query, roleFilter, activeOnly]);
+
+  useEffect(() => {
+    if (!filteredMembers.some((member) => member.id === memberId)) {
+      setMemberId(filteredMembers[0]?.id ?? '');
+    }
+  }, [filteredMembers, memberId]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -70,11 +95,31 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
       </p>
 
       <form onSubmit={submit} style={{ display: 'grid', gap: 8, maxWidth: 480, marginBottom: 20 }}>
+        <input
+          placeholder="Search member by nickname or id"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <div style={{ display: 'flex', gap: 8 }}>
+          <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+            <option value="ALL">All roles</option>
+            {roleOptions.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
+            ))}
+          </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <input type="checkbox" checked={activeOnly} onChange={(e) => setActiveOnly(e.target.checked)} />
+            active only
+          </label>
+        </div>
+
         <select value={memberId} onChange={(e) => setMemberId(e.target.value)} required>
-          {members.length === 0 ? <option value="">No members available</option> : null}
-          {members.map((member) => (
+          {filteredMembers.length === 0 ? <option value="">No members available</option> : null}
+          {filteredMembers.map((member) => (
             <option key={member.id} value={member.id}>
-              {member.nickname} ({member.role})
+              {member.nickname} ({member.role}){member.active ? '' : ' · inactive'}
             </option>
           ))}
         </select>
