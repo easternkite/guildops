@@ -10,6 +10,7 @@
     "format": "pnpm -r format",
     "ops:rehearsal": "bash scripts/rehearsal.sh",
     "ops:rehearsal:report": "bash scripts/rehearsal-report.sh",
-    "ops:release-check": "bash scripts/release-checklist.sh"
+    "ops:release-check": "bash scripts/release-checklist.sh",
+    "ops:demo-status:snapshot": "bash scripts/demo-status-snapshot.sh"
   }
 }

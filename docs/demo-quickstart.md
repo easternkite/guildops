@@ -60,3 +60,11 @@ pnpm ops:rehearsal:report
 pnpm ops:release-check
 ```
 
+데모 상태를 markdown 스냅샷으로 저장하려면:
+
+```bash
+pnpm ops:demo-status:snapshot
+```
+
+- 출력: `docs/demo-status-snapshots/demo-status-<timestamp>.md`
+
