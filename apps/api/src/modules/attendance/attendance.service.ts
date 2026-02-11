@@ -12,7 +12,7 @@ export class AttendanceService {
       include: { _count: { select: { checkIns: true } } },
     });
 
-    return items.map((item) => ({ ...item, checkInCount: item._count.checkIns }));
+    return items.map((item: (typeof items)[number]) => ({ ...item, checkInCount: item._count.checkIns }));
   }
 
   async findOne(id: string) {
