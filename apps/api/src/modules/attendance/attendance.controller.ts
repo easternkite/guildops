@@ -1,5 +1,6 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import { AttendanceService } from './attendance.service';
+import { CreateAttendanceDto, CreateCheckInDto, UpdateAttendanceDto } from './dto/attendance.dto';
 
 @Controller('attendance')
 export class AttendanceController {
@@ -16,12 +17,12 @@ export class AttendanceController {
   }
 
   @Post()
-  create(@Body() body: any) {
+  create(@Body() body: CreateAttendanceDto) {
     return this.service.create(body);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: any) {
+  update(@Param('id') id: string, @Body() body: UpdateAttendanceDto) {
     return this.service.update(id, body);
   }
 
@@ -36,7 +37,7 @@ export class AttendanceController {
   }
 
   @Post(':id/check-ins')
-  recordCheckIn(@Param('id') id: string, @Body() body: any) {
+  recordCheckIn(@Param('id') id: string, @Body() body: CreateCheckInDto) {
     return this.service.recordCheckIn(id, body);
   }
 }

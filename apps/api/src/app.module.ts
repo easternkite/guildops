@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from './common/prisma/prisma.module';
 import { UguildsModule } from './modules/guilds/guilds.module';
 import { UmembersModule } from './modules/members/members.module';
 import { UeventsModule } from './modules/events/events.module';
@@ -10,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
+    PrismaModule,
     UguildsModule,
     UmembersModule,
     UeventsModule,

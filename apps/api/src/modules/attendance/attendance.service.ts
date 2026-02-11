@@ -1,120 +1,111 @@
-import crypto from 'node:crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
-
-type Attendance = {
-  id: string;
-  guildId: string;
-  game: string;
-  title: string;
-  startsAt: string;
-  status: string;
-  createdAt: string;
-};
-
-type AttendanceCheckIn = {
-  id: string;
-  attendanceId: string;
-  memberId: string;
-  status: string;
-  note?: string;
-  checkedInAt: string;
-};
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../common/prisma/prisma.service';
+import { CreateAttendanceDto, CreateCheckInDto, UpdateAttendanceDto } from './dto/attendance.dto';
 
 @Injectable()
 export class AttendanceService {
-  private attendances: Attendance[] = [];
-  private checkIns: AttendanceCheckIn[] = [];
+  constructor(private readonly prisma: PrismaService) {}
 
-  findAll() {
-    return this.attendances.map((item) => ({
-      ...item,
-      checkInCount: this.checkIns.filter((checkIn) => checkIn.attendanceId === item.id).length,
-    }));
+  async findAll() {
+    const items = await this.prisma.attendance.findMany({
+      orderBy: { startsAt: 'asc' },
+      include: { _count: { select: { checkIns: true } } },
+    });
+
+    return items.map((item) => ({ ...item, checkInCount: item._count.checkIns }));
   }
 
-  findOne(id: string) {
-    const found = this.attendances.find((item) => item.id === id);
-    if (!found) {
-      throw new NotFoundException(`Attendance ${id} not found`);
-    }
+  async findOne(id: string) {
+    const found = await this.prisma.attendance.findUnique({
+      where: { id },
+      include: { checkIns: { orderBy: { checkedInAt: 'desc' } } },
+    });
 
-    return {
-      ...found,
-      checkIns: this.checkIns.filter((checkIn) => checkIn.attendanceId === id),
-    };
+    if (!found) throw new NotFoundException(`Attendance ${id} not found`);
+    return found;
   }
 
-  create(body: Partial<Attendance>) {
-    const row: Attendance = {
-      id: crypto.randomUUID(),
-      guildId: body.guildId ?? '',
-      game: body.game ?? 'default',
-      title: body.title ?? 'Untitled attendance',
-      startsAt: body.startsAt ?? new Date().toISOString(),
-      status: body.status ?? 'open',
-      createdAt: new Date().toISOString(),
-    };
+  async create(body: CreateAttendanceDto) {
+    await this.ensureGuildExists(body.guildId);
 
-    this.attendances.push(row);
-    return row;
+    return this.prisma.attendance.create({
+      data: {
+        guildId: body.guildId,
+        game: body.game,
+        title: body.title,
+        startsAt: new Date(body.startsAt),
+        status: body.status ?? 'open',
+      },
+    });
   }
 
-  update(id: string, body: Partial<Attendance>) {
-    const index = this.attendances.findIndex((item) => item.id === id);
-    if (index < 0) {
-      throw new NotFoundException(`Attendance ${id} not found`);
-    }
+  async update(id: string, body: UpdateAttendanceDto) {
+    await this.ensureAttendanceExists(id);
 
-    this.attendances[index] = { ...this.attendances[index], ...body, id };
-    return this.attendances[index];
+    return this.prisma.attendance.update({
+      where: { id },
+      data: {
+        game: body.game,
+        title: body.title,
+        startsAt: body.startsAt ? new Date(body.startsAt) : undefined,
+        status: body.status,
+      },
+    });
   }
 
-  remove(id: string) {
-    this.attendances = this.attendances.filter((item) => item.id !== id);
-    this.checkIns = this.checkIns.filter((item) => item.attendanceId !== id);
+  async remove(id: string) {
+    await this.ensureAttendanceExists(id);
+    await this.prisma.attendanceCheckIn.deleteMany({ where: { attendanceId: id } });
+    await this.prisma.attendance.delete({ where: { id } });
     return { deleted: true };
   }
 
-  listCheckIns(attendanceId: string) {
-    this.ensureAttendanceExists(attendanceId);
-    return this.checkIns.filter((item) => item.attendanceId === attendanceId);
+  async listCheckIns(attendanceId: string) {
+    await this.ensureAttendanceExists(attendanceId);
+    return this.prisma.attendanceCheckIn.findMany({
+      where: { attendanceId },
+      orderBy: { checkedInAt: 'desc' },
+    });
   }
 
-  recordCheckIn(attendanceId: string, body: Partial<AttendanceCheckIn>) {
-    this.ensureAttendanceExists(attendanceId);
+  async recordCheckIn(attendanceId: string, body: CreateCheckInDto) {
+    const attendance = await this.prisma.attendance.findUnique({ where: { id: attendanceId } });
+    if (!attendance) throw new NotFoundException(`Attendance ${attendanceId} not found`);
 
-    const existingIndex = this.checkIns.findIndex(
-      (item) => item.attendanceId === attendanceId && item.memberId === body.memberId,
-    );
-
-    if (existingIndex >= 0) {
-      this.checkIns[existingIndex] = {
-        ...this.checkIns[existingIndex],
-        status: body.status ?? this.checkIns[existingIndex].status,
-        note: body.note ?? this.checkIns[existingIndex].note,
-        checkedInAt: new Date().toISOString(),
-      };
-
-      return this.checkIns[existingIndex];
+    const member = await this.prisma.member.findUnique({ where: { id: body.memberId } });
+    if (!member) throw new BadRequestException(`Member ${body.memberId} does not exist`);
+    if (member.guildId !== attendance.guildId) {
+      throw new BadRequestException('Member does not belong to this attendance guild');
     }
 
-    const row: AttendanceCheckIn = {
-      id: crypto.randomUUID(),
-      attendanceId,
-      memberId: body.memberId ?? '',
-      status: body.status ?? 'checked_in',
-      note: body.note,
-      checkedInAt: new Date().toISOString(),
-    };
-
-    this.checkIns.push(row);
-    return row;
+    return this.prisma.attendanceCheckIn.upsert({
+      where: {
+        attendanceId_memberId: {
+          attendanceId,
+          memberId: body.memberId,
+        },
+      },
+      create: {
+        attendanceId,
+        memberId: body.memberId,
+        status: body.status ?? 'checked_in',
+        note: body.note,
+      },
+      update: {
+        status: body.status ?? 'checked_in',
+        note: body.note,
+        checkedInAt: new Date(),
+      },
+    });
   }
 
-  private ensureAttendanceExists(attendanceId: string) {
-    const found = this.attendances.some((item) => item.id === attendanceId);
-    if (!found) {
-      throw new NotFoundException(`Attendance ${attendanceId} not found`);
-    }
+  private async ensureAttendanceExists(id: string) {
+    const found = await this.prisma.attendance.findUnique({ where: { id }, select: { id: true } });
+    if (!found) throw new NotFoundException(`Attendance ${id} not found`);
+  }
+
+  private async ensureGuildExists(id: string) {
+    const found = await this.prisma.guild.findUnique({ where: { id }, select: { id: true } });
+    if (!found) throw new BadRequestException(`Guild ${id} does not exist`);
   }
 }
