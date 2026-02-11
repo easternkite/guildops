@@ -6,6 +6,7 @@ REPORT_DIR="$ROOT_DIR/docs/rehearsal-reports"
 TS="$(date +%Y%m%d-%H%M%S)"
 REPORT_PATH="$REPORT_DIR/rehearsal-$TS.md"
 INDEX_PATH="$REPORT_DIR/index.md"
+KEEP_REPORTS="${KEEP_REPORTS:-30}"
 
 mkdir -p "$REPORT_DIR"
 
@@ -57,18 +58,34 @@ run_step "Demo Seed" bash -lc "cd '$ROOT_DIR/apps/api' && npx pnpm seed:demo"
   echo "- report: $REPORT_PATH"
 } >> "$REPORT_PATH"
 
+REPORT_LIST="$REPORT_DIR/.report-list.tmp"
+ls -1t "$REPORT_DIR"/rehearsal-*.md 2>/dev/null > "$REPORT_LIST" || true
+
+line_count="$(wc -l < "$REPORT_LIST" | tr -d ' ')"
+if [ "$line_count" -gt "$KEEP_REPORTS" ]; then
+  tail -n +$((KEEP_REPORTS + 1)) "$REPORT_LIST" | while read -r old; do
+    [ -n "$old" ] && rm -f "$old"
+  done
+fi
+
+ls -1t "$REPORT_DIR"/rehearsal-*.md 2>/dev/null > "$REPORT_LIST" || true
+
 {
   echo "# Rehearsal Reports Index"
   echo
   echo "- updatedAt: $(date -Iseconds)"
+  echo "- keepReports: $KEEP_REPORTS"
   echo
   echo "## Reports"
-  ls -1t "$REPORT_DIR"/rehearsal-*.md 2>/dev/null | head -n 50 | while read -r file; do
+  head -n "$KEEP_REPORTS" "$REPORT_LIST" | while read -r file; do
+    [ -z "$file" ] && continue
     base="$(basename "$file")"
     ts="${base#rehearsal-}"
     ts="${ts%.md}"
     echo "- [$base](./$base) · $ts"
   done
 } > "$INDEX_PATH"
+
+rm -f "$REPORT_LIST"
 
 echo "$REPORT_PATH"

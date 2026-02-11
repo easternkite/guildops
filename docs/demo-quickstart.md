@@ -52,6 +52,7 @@ pnpm ops:rehearsal:report
 ```
 
 - 출력: `docs/rehearsal-reports/rehearsal-<timestamp>.md`
+- 기본 보존 개수: 최근 30개 (`KEEP_REPORTS=<n> pnpm ops:rehearsal:report`로 조정)
 
 릴리즈 전 핵심 점검(build/test/demo checklist)은:
 
