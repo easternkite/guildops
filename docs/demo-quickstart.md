@@ -4,10 +4,21 @@
 
 ```bash
 cd apps/api
-pnpm seed
+pnpm seed:demo
 ```
 
 Seed 완료 시 JSON으로 demo ID가 출력됩니다.
+
+### Demo reset (안전장치 포함)
+
+```bash
+cd apps/api
+ALLOW_DEMO_RESET=true NODE_ENV=development pnpm seed:demo:reset
+pnpm seed:demo
+```
+
+- `ALLOW_DEMO_RESET=true` 없으면 reset 실행이 거부됩니다.
+- `NODE_ENV=production`에서는 reset 실행이 거부됩니다.
 
 ## 2) Demo flow (5분)
 
