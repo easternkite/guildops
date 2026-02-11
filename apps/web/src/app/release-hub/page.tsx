@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { OpsCommandList } from '../../components/ops-command-list';
 
 export default function ReleaseHubPage() {
   const commands = ['pnpm ops:rehearsal', 'pnpm ops:rehearsal:report', 'pnpm ops:release-check', 'pnpm ops:demo-status:snapshot'];
@@ -19,10 +20,8 @@ export default function ReleaseHubPage() {
 
         <article className="kpi-card">
           <h3>운영 명령</h3>
-          {commands.map((cmd) => (
-            <p className="kpi-note" key={cmd}><code>{cmd}</code></p>
-          ))}
-          <p className="kpi-note">
+          <OpsCommandList commands={commands} />
+          <p className="kpi-note" style={{ marginTop: 8 }}>
             <a href="https://github.com/easternkite/guildops/blob/main/RUNBOOK.md" target="_blank" rel="noreferrer">RUNBOOK 열기</a>
           </p>
         </article>
