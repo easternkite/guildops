@@ -30,6 +30,34 @@ docker compose up --build
   - `ghcr.io/easternkite/guildops-api`
   - `ghcr.io/easternkite/guildops-web`
 
+## GHCR 이미지 Pull / 실행
+### 1) 로그인 (private 패키지인 경우)
+```bash
+echo <GITHUB_TOKEN> | docker login ghcr.io -u <github-username> --password-stdin
+```
+
+### 2) 이미지 pull
+```bash
+docker pull ghcr.io/easternkite/guildops-api:latest
+docker pull ghcr.io/easternkite/guildops-web:latest
+```
+
+### 3) 컨테이너 실행 예시
+```bash
+docker run -d --name guildops-api \
+  -p 4000:4000 \
+  -e DATABASE_URL='postgresql://guildops:guildops@<db-host>:5432/guildops' \
+  -e REDIS_URL='redis://<redis-host>:6379' \
+  ghcr.io/easternkite/guildops-api:latest
+
+docker run -d --name guildops-web \
+  -p 3000:3000 \
+  -e NEXT_PUBLIC_API_URL='http://localhost:4000/api' \
+  ghcr.io/easternkite/guildops-web:latest
+```
+
+> 권장: 로컬 개발/통합 실행은 기존 `docker compose up --build` 사용.
+
 ## 주요 라우트
 - Web: `/dashboard`, `/members`, `/events`, `/announcements`, `/attendance`
 - API: `/guilds`, `/members`, `/events`, `/announcements`, `/rewards`, `/audit-logs`, `/attendance`, `/auth/discord/*`
