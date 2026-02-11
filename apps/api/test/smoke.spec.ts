@@ -17,9 +17,10 @@ function createPrismaMock() {
     },
     member: {
       findUnique: jest.fn(async ({ where }: any) => members.find((m) => m.id === where.id) ?? null),
-      findMany: jest.fn(async ({ where }: any) =>
-        where?.guildId ? members.filter((m) => m.guildId === where.guildId) : [...members],
-      ),
+      findMany: jest.fn(async ({ where }: any) => {
+        const rows = where?.guildId ? members.filter((m) => m.guildId === where.guildId) : [...members];
+        return [...rows].sort((a, b) => a.nickname.localeCompare(b.nickname));
+      }),
       create: jest.fn(async ({ data }: any) => {
         const row = { id: `m${members.length + 1}`, ...data };
         members.push(row);
@@ -135,6 +136,29 @@ describe('GuildOps API smoke', () => {
       .expect(200);
 
     expect(me.body.user.discordId).toBe('d1');
+  });
+
+  it('members CRUD/list sort flow works', async () => {
+    await request(app.getHttpServer())
+      .post('/api/members')
+      .send({ guildId: 'g1', nickname: 'Zeta', role: 'MEMBER', active: true })
+      .expect(201);
+
+    const created = await request(app.getHttpServer())
+      .post('/api/members')
+      .send({ guildId: 'g1', nickname: 'Alpha', role: 'ADMIN', active: true })
+      .expect(201);
+
+    const list = await request(app.getHttpServer()).get('/api/members?guildId=g1').expect(200);
+    expect(list.body.map((m: any) => m.nickname)).toEqual(['Alpha', 'Leader', 'Zeta']);
+
+    await request(app.getHttpServer())
+      .patch(`/api/members/${created.body.id}`)
+      .send({ active: false })
+      .expect(200);
+
+    const detail = await request(app.getHttpServer()).get(`/api/members/${created.body.id}`).expect(200);
+    expect(detail.body.active).toBe(false);
   });
 
   it('attendance CRUD/check-in flow works', async () => {
