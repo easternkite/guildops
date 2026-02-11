@@ -161,6 +161,16 @@ describe('GuildOps API smoke', () => {
     expect(detail.body.active).toBe(false);
   });
 
+  it('attendance guard enforces missing/forbidden/allowed role cases', async () => {
+    const payload = { guildId: 'g1', game: 'Lost Ark', title: 'Guard check', startsAt: new Date().toISOString() };
+
+    await request(app.getHttpServer()).post('/api/attendance').send(payload).expect(401);
+
+    await request(app.getHttpServer()).post('/api/attendance').set('x-guild-role', 'MEMBER').send(payload).expect(403);
+
+    await request(app.getHttpServer()).post('/api/attendance').set('x-guild-role', 'ADMIN').send(payload).expect(201);
+  });
+
   it('attendance CRUD/check-in flow works', async () => {
     const create = await request(app.getHttpServer())
       .post('/api/attendance')
