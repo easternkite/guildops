@@ -36,11 +36,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Test
-        run: pnpm test
-
       - name: Generate Prisma Client
         run: pnpm --filter @guildops/api prisma:generate
+
+      - name: Test
+        run: pnpm test
 
       - name: Build
         run: pnpm build
