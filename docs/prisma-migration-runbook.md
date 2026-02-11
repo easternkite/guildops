@@ -6,6 +6,7 @@
 ## Environment Rules
 - **local/dev**: `pnpm --filter @guildops/api prisma:migrate:dev`
 - **staging/prod**: `pnpm --filter @guildops/api prisma:migrate:deploy`
+  - (script) `apps/api/package.json`의 `prisma:migrate:deploy` 사용
 - production에서는 `migrate dev` 금지.
 
 ## 배포 플로우 (권장)
