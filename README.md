@@ -21,6 +21,15 @@ docker compose up --build
 - Web: http://localhost:3000
 - API: http://localhost:4000/api
 
+## GHCR 이미지 배포
+- Workflow: `.github/workflows/publish-ghcr.yml`
+- 트리거:
+  - `main` push 시 `latest` + `sha` 태그 배포
+  - `v*.*.*` 태그 push 시 semver 태그 배포
+- 이미지:
+  - `ghcr.io/easternkite/guildops-api`
+  - `ghcr.io/easternkite/guildops-web`
+
 ## 주요 라우트
 - Web: `/dashboard`, `/members`, `/events`, `/announcements`, `/attendance`
 - API: `/guilds`, `/members`, `/events`, `/announcements`, `/rewards`, `/audit-logs`, `/attendance`, `/auth/discord/*`
