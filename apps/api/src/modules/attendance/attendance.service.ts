@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { CreateAttendanceDto, CreateCheckInDto, UpdateAttendanceDto } from './dto/attendance.dto';
 
@@ -25,8 +25,7 @@ export class AttendanceService {
     return found;
   }
 
-  async create(body: CreateAttendanceDto, actorRole?: string) {
-    this.assertRole(actorRole, ['OWNER', 'ADMIN']);
+  async create(body: CreateAttendanceDto) {
     await this.ensureGuildExists(body.guildId);
 
     return this.prisma.attendance.create({
@@ -40,8 +39,7 @@ export class AttendanceService {
     });
   }
 
-  async update(id: string, body: UpdateAttendanceDto, actorRole?: string) {
-    this.assertRole(actorRole, ['OWNER', 'ADMIN']);
+  async update(id: string, body: UpdateAttendanceDto) {
     await this.ensureAttendanceExists(id);
 
     return this.prisma.attendance.update({
@@ -55,8 +53,7 @@ export class AttendanceService {
     });
   }
 
-  async remove(id: string, actorRole?: string) {
-    this.assertRole(actorRole, ['OWNER']);
+  async remove(id: string) {
     await this.ensureAttendanceExists(id);
     await this.prisma.attendanceCheckIn.deleteMany({ where: { attendanceId: id } });
     await this.prisma.attendance.delete({ where: { id } });
@@ -72,7 +69,6 @@ export class AttendanceService {
   }
 
   async recordCheckIn(attendanceId: string, body: CreateCheckInDto, actorRole?: string, actorMemberId?: string) {
-    this.assertRole(actorRole, ['OWNER', 'ADMIN', 'MEMBER']);
     if (actorRole === 'MEMBER' && actorMemberId !== body.memberId) {
       throw new ForbiddenException('Members can only check in themselves');
     }
@@ -117,11 +113,4 @@ export class AttendanceService {
     if (!found) throw new BadRequestException(`Guild ${id} does not exist`);
   }
 
-  private assertRole(actorRole: string | undefined, allowedRoles: string[]) {
-    if (!actorRole) throw new UnauthorizedException('Missing actor role');
-    const normalizedRole = actorRole.toUpperCase();
-    if (!allowedRoles.includes(normalizedRole)) {
-      throw new ForbiddenException(`Role ${normalizedRole} is not allowed`);
-    }
-  }
 }
