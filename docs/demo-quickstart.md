@@ -53,3 +53,9 @@ pnpm ops:rehearsal:report
 
 - 출력: `docs/rehearsal-reports/rehearsal-<timestamp>.md`
 
+릴리즈 전 핵심 점검(build/test/demo checklist)은:
+
+```bash
+pnpm ops:release-check
+```
+
