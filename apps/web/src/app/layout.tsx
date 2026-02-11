@@ -31,7 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="main-panel">
             <header className="topbar">
               <strong>GuildOps Console</strong>
-              <span className="topbar-note">MVP Stabilization</span>
+              <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <a className="topbar-note" href="https://github.com/easternkite/guildops/blob/main/RUNBOOK.md" target="_blank" rel="noreferrer">
+                  RUNBOOK
+                </a>
+                <span className="topbar-note">MVP Stabilization</span>
+              </span>
             </header>
             <FeedbackCapture />
             <main className="content">{children}</main>
