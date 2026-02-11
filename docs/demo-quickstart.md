@@ -45,3 +45,11 @@ pnpm ops:rehearsal
 
 실행 항목: API build → API test → demo reset(guarded) → demo seed
 
+리허설 결과를 markdown 리포트로 남기려면:
+
+```bash
+pnpm ops:rehearsal:report
+```
+
+- 출력: `docs/rehearsal-reports/rehearsal-<timestamp>.md`
+
