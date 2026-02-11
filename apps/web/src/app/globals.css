@@ -82,6 +82,16 @@ a:hover { text-decoration: underline; }
   font-size: 12px;
 }
 
+.ops-notice {
+  border-bottom: 1px solid var(--border);
+  background: #0b1328;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 main, section {
   background: var(--panel);
   border: 1px solid var(--border);

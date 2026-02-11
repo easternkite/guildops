@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { FeedbackCapture } from '../components/feedback-capture';
+import { OpsResultNotice } from '../components/ops-result-notice';
 import './globals.css';
 
 const navItems = [
@@ -39,6 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </span>
             </header>
             <FeedbackCapture />
+            <OpsResultNotice />
             <main className="content">{children}</main>
           </div>
         </div>
