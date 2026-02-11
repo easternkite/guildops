@@ -1,3 +1,4 @@
+import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
 import { getList } from '../../lib/api';
 
 type Attendance = { id: string; checkInCount?: number };
@@ -38,6 +39,9 @@ export default async function DashboardPage() {
     <main>
       <h2>Dashboard</h2>
       <p className="dashboard-subtitle">실데이터 기반 운영 KPI 요약</p>
+      <div style={{ marginTop: 8 }}>
+        <DashboardRefreshButton />
+      </div>
 
       <section className="kpi-grid" aria-label="KPI Widgets">
         <article className="kpi-card">
