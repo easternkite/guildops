@@ -25,18 +25,18 @@
 
 ## 3) 백로그 (우선순위)
 
-| ID | 타입 | 작업 | 우선순위 | 예상 SP | 담당 |
-|---|---|---|---|---:|---|
-| BE-01 | API | `events` Prisma 전환 + DTO 추가 | P0 | 5 | Backend |
-| BE-02 | API | `announcements` Prisma 전환 + DTO 추가 | P0 | 5 | Backend |
-| BE-03 | API | 공통 에러 포맷/validation 메시지 정비 | P1 | 3 | Backend |
-| BE-04 | API | audit log 기록 훅(핵심 액션) 도입 | P1 | 3 | Backend |
-| FE-01 | Web | `/dashboard` KPI 카드(출석/체크인/활성멤버) | P0 | 5 | Frontend |
-| FE-02 | Web | `/members` JSON 출력 → 테이블/필터 UI | P0 | 5 | Frontend |
-| FE-03 | Web | `/events`, `/announcements` CRUD 폼 기본화 | P1 | 5 | Frontend |
-| QA-01 | QA | attendance 권한 회귀 케이스 추가 | P0 | 3 | QA/Backend |
-| QA-02 | QA | e2e smoke 시나리오 확장 | P1 | 3 | QA |
-| OPS-01 | Docs | runbook/ops 체크리스트 최신화 | P2 | 2 | PM/EM |
+| ID | 타입 | 작업 | 우선순위 | 예상 SP | 담당 | 검증 커맨드 |
+|---|---|---|---|---:|---|---|
+| BE-01 | API | `events` Prisma 전환 + DTO 추가 | P0 | 5 | Backend | `pnpm --filter @guildops/api test && pnpm --filter @guildops/api build` |
+| BE-02 | API | `announcements` Prisma 전환 + DTO 추가 | P0 | 5 | Backend | `pnpm --filter @guildops/api test && pnpm --filter @guildops/api build` |
+| BE-03 | API | 공통 에러 포맷/validation 메시지 정비 | P1 | 3 | Backend | `pnpm --filter @guildops/api test` |
+| BE-04 | API | audit log 기록 훅(핵심 액션) 도입 | P1 | 3 | Backend | `pnpm --filter @guildops/api test` |
+| FE-01 | Web | `/dashboard` KPI 카드(출석/체크인/활성멤버) | P0 | 5 | Frontend | `pnpm --filter @guildops/web lint && pnpm --filter @guildops/web build` |
+| FE-02 | Web | `/members` JSON 출력 → 테이블/필터 UI | P0 | 5 | Frontend | `pnpm --filter @guildops/web lint && pnpm --filter @guildops/web build` |
+| FE-03 | Web | `/events`, `/announcements` CRUD 폼 기본화 | P1 | 5 | Frontend | `pnpm --filter @guildops/web lint && pnpm --filter @guildops/web build` |
+| QA-01 | QA | attendance 권한 회귀 케이스 추가 | P0 | 3 | QA/Backend | `pnpm --filter @guildops/api test` |
+| QA-02 | QA | e2e smoke 시나리오 확장 | P1 | 3 | QA | `pnpm test` |
+| OPS-01 | Docs | runbook/ops 체크리스트 최신화 | P2 | 2 | PM/EM | `pnpm lint` |
 
 ## 4) 일자별 실행 계획
 
@@ -90,4 +90,3 @@
 - [ ] KPI 카드 데이터 소스(API) 계약 명세 작성
 - [ ] 테스트 실행 기준 환경(로컬/CI) 정렬
 - [ ] 스프린트 종료 데모 시나리오 확정
-
