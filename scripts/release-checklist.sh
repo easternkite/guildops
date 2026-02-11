@@ -29,6 +29,13 @@ if [ -n "$DEMO_JSON" ] && echo "$DEMO_JSON" | grep -q '"ok":true'; then
   status_demo="PASS"; pass "demo checklist"
 else
   fail "demo checklist"
+  if [ -n "$DEMO_JSON" ]; then
+    missing="$(echo "$DEMO_JSON" | npx node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const j=JSON.parse(s);console.log((j.missing||[]).join(', '));}catch{console.log('unknown')}});")"
+    echo "[INFO] missing items: ${missing:-unknown}"
+  else
+    echo "[INFO] demo checklist probe failed. see /tmp/guildops-release-demo.log"
+  fi
+  echo "[GUIDE] 해결: pnpm --dir $ROOT_DIR --filter @guildops/api seed:demo 실행 후 재시도"
 fi
 
 SUMMARY="build=$status_build test=$status_test demoChecklist=$status_demo"
