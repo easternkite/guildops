@@ -1,0 +1,27 @@
+{
+  "name": "@guildops/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start -p 3000",
+    "lint": "next lint",
+    "test": "echo web test ok",
+    "format": "echo web format ok"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "@guildops/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tailwindcss": "^3.4.13",
+    "postcss": "^8.4.45",
+    "autoprefixer": "^10.4.20",
+    "@types/react": "^18.3.11",
+    "@types/node": "^22.7.4"
+  }
+}
