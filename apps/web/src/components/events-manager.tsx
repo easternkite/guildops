@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { createItem, updateItem } from '../lib/api';
+import { createItem, deleteItem, toUserError, updateItem } from '../lib/api';
 
 type EventItem = {
   id: string;
@@ -40,18 +40,28 @@ export function EventsManager({ initialItems }: { initialItems: EventItem[] }) {
       setItems((prev) => [created, ...prev]);
       setForm(defaultForm);
     } catch (e) {
-      setError((e as Error).message);
+      setError(toUserError(e));
     }
   }
 
   async function quickStatus(id: string, status: string) {
-    const updated = await updateItem(`events/${id}`, { status });
-    setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    setError('');
+    try {
+      const updated = await updateItem(`events/${id}`, { status });
+      setItems((prev) => prev.map((item) => (item.id === id ? updated : item)));
+    } catch (e) {
+      setError(toUserError(e));
+    }
   }
 
   async function remove(id: string) {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api'}/events/${id}`, { method: 'DELETE' });
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setError('');
+    try {
+      await deleteItem(`events/${id}`);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } catch (e) {
+      setError(toUserError(e));
+    }
   }
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { createItem, updateItem } from '../lib/api';
+import { createItem, deleteItem, toUserError, updateItem } from '../lib/api';
 
 type Announcement = {
   id: string;
@@ -12,7 +12,6 @@ type Announcement = {
 };
 
 const defaultForm = { guildId: '', title: '', content: '' };
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
 export function AnnouncementsManager({ initialItems }: { initialItems: Announcement[] }) {
   const [items, setItems] = useState<Announcement[]>(initialItems);
@@ -36,20 +35,30 @@ export function AnnouncementsManager({ initialItems }: { initialItems: Announcem
       setItems((prev) => [created, ...prev]);
       setForm(defaultForm);
     } catch (e) {
-      setError((e as Error).message);
+      setError(toUserError(e));
     }
   }
 
   async function quickEdit(item: Announcement) {
     const nextTitle = prompt('새 공지 제목', item.title);
     if (!nextTitle) return;
-    const updated = await updateItem(`announcements/${item.id}`, { title: nextTitle });
-    setItems((prev) => prev.map((ann) => (ann.id === item.id ? updated : ann)));
+    setError('');
+    try {
+      const updated = await updateItem(`announcements/${item.id}`, { title: nextTitle });
+      setItems((prev) => prev.map((ann) => (ann.id === item.id ? updated : ann)));
+    } catch (e) {
+      setError(toUserError(e));
+    }
   }
 
   async function remove(id: string) {
-    await fetch(`${API}/announcements/${id}`, { method: 'DELETE' });
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    setError('');
+    try {
+      await deleteItem(`announcements/${id}`);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } catch (e) {
+      setError(toUserError(e));
+    }
   }
 
   return (

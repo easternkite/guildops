@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { createItem, getList } from '../../../lib/api';
+import { createItem, getList, toUserError } from '../../../lib/api';
 
 type CheckIn = {
   id: string;
@@ -49,7 +49,7 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
   }, [params.id, memberId]);
 
   useEffect(() => {
-    load().catch((e) => setError((e as Error).message));
+    load().catch((e) => setError(toUserError(e)));
   }, [load]);
 
   const roleOptions = useMemo(
@@ -96,7 +96,7 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
       setNote('');
       await load();
     } catch (e) {
-      setError((e as Error).message);
+      setError(toUserError(e));
     }
   }
 
