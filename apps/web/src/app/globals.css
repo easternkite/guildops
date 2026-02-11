@@ -1,4 +1,89 @@
-body { margin: 0; font-family: sans-serif; padding: 20px; background: #0b1020; color: #e7ecff; }
-a { color: #91b4ff; }
-input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #334; background: #121932; color: #e7ecff; }
+:root {
+  --bg: #0b1020;
+  --panel: #121932;
+  --panel-soft: #0f162c;
+  --text: #e7ecff;
+  --muted: #9fb0da;
+  --border: #2b3658;
+  --accent: #91b4ff;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a { color: var(--accent); text-decoration: none; }
+
+a:hover { text-decoration: underline; }
+
+.app-shell { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; }
+
+.sidebar {
+  border-right: 1px solid var(--border);
+  background: #0a0f1f;
+  padding: 20px 14px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.brand { font-weight: 800; letter-spacing: 0.3px; margin-bottom: 16px; }
+.nav-link {
+  display: block;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  color: var(--text);
+}
+.nav-link:hover { background: #17203d; text-decoration: none; }
+
+.main-panel { display: flex; flex-direction: column; min-width: 0; }
+.topbar {
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  background: var(--panel-soft);
+}
+.topbar-note { color: var(--muted); font-size: 13px; }
+
+.content { padding: 20px; }
+
+main, section {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+input, select, button {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #121932;
+  color: var(--text);
+}
 button { cursor: pointer; }
+button:hover { filter: brightness(1.08); }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+th, td {
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  padding: 10px;
+}
+
+@media (max-width: 900px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .sidebar { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); }
+}
