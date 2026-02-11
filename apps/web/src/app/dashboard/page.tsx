@@ -4,13 +4,19 @@ type Attendance = { id: string; checkInCount?: number };
 type Member = { id: string; active?: boolean };
 type Event = { id: string; title: string; startsAt: string; status?: string };
 type Health = { ok?: boolean; status?: string; message?: string };
+type DemoChecklist = {
+  ok?: boolean;
+  checks?: Record<string, boolean>;
+  missing?: string[];
+};
 
 export default async function DashboardPage() {
-  const [attendance, members, events, health] = await Promise.all([
+  const [attendance, members, events, health, checklist] = await Promise.all([
     getList('attendance').catch(() => [] as Attendance[]),
     getList('members').catch(() => [] as Member[]),
     getList('events').catch(() => [] as Event[]),
     getList('auth/discord/health').catch(() => null as Health | null),
+    getList('auth/demo/checklist-health').catch(() => null as DemoChecklist | null),
   ]);
 
   const attendanceCount = attendance.length;
@@ -25,6 +31,8 @@ export default async function DashboardPage() {
     .find((event: Event) => event.status !== 'done' && event.status !== 'closed');
 
   const healthStatus = health?.ok ?? health?.status === 'ok';
+  const checklistStatus = checklist?.ok === true;
+  const checklistMissing = checklist?.missing ?? [];
 
   return (
     <main>
@@ -60,10 +68,15 @@ export default async function DashboardPage() {
 
         <article className="kpi-card">
           <h3>운영 상태</h3>
-          <p className={`kpi-value kpi-value-small ${healthStatus ? 'status-ok' : 'status-warn'}`}>
-            {healthStatus ? 'API 정상' : 'API 점검 필요'}
+          <p className={`kpi-value kpi-value-small ${healthStatus && checklistStatus ? 'status-ok' : 'status-warn'}`}>
+            {healthStatus && checklistStatus ? 'API/DEMO 정상' : '점검 필요'}
           </p>
-          <p className="kpi-note">{healthStatus ? 'Discord auth health check 통과' : health?.message ?? 'health endpoint 실패'}</p>
+          <p className="kpi-note">
+            auth: {healthStatus ? 'ok' : 'fail'} · demo: {checklistStatus ? 'ok' : `missing ${checklistMissing.length}`}
+          </p>
+          {!checklistStatus && checklistMissing.length > 0 ? (
+            <p className="kpi-note">누락: {checklistMissing.join(', ')}</p>
+          ) : null}
         </article>
       </section>
     </main>
