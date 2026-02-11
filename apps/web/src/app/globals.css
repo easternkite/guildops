@@ -55,6 +55,33 @@ a:hover { text-decoration: underline; }
 
 .content { padding: 20px; }
 
+.feedback-panel {
+  border-bottom: 1px solid var(--border);
+  background: #0e1429;
+  padding: 8px 20px;
+}
+
+.feedback-form {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.feedback-form label {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.feedback-form input {
+  flex: 1;
+}
+
+.feedback-saved {
+  color: #67e8a5;
+  font-size: 12px;
+}
+
 main, section {
   background: var(--panel);
   border: 1px solid var(--border);
