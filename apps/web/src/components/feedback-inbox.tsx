@@ -37,6 +37,16 @@ ${item.message}
 `;
 }
 
+function shEscape(value: string) {
+  return `'${value.replace(/'/g, `'"'"'`)}'`;
+}
+
+function issueCreateCommand(item: FeedbackItem) {
+  const title = `[feedback] ${item.path} · ${new Date(item.createdAt).toISOString().slice(0, 16).replace('T', ' ')}`;
+  const body = issueTemplate(item);
+  return `gh issue create --repo easternkite/guildops --title ${shEscape(title)} --body-file - <<'EOF'\n${body}\nEOF`;
+}
+
 async function copyText(text: string) {
   try {
     await navigator.clipboard.writeText(text);
@@ -50,6 +60,7 @@ export function FeedbackInbox() {
   const [items, setItems] = useState<FeedbackItem[]>(loadItems);
   const [pathFilter, setPathFilter] = useState('ALL');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copiedCommandId, setCopiedCommandId] = useState<string | null>(null);
 
   const pathOptions = useMemo(
     () => ['ALL', ...Array.from(new Set(items.map((item) => item.path))).sort()],
@@ -79,10 +90,17 @@ export function FeedbackInbox() {
     setTimeout(() => setCopiedId((current) => (current === item.id ? null : current)), 1500);
   }
 
+  async function exportIssueCommand(item: FeedbackItem) {
+    const ok = await copyText(issueCreateCommand(item));
+    if (!ok) return;
+    setCopiedCommandId(item.id);
+    setTimeout(() => setCopiedCommandId((current) => (current === item.id ? null : current)), 1500);
+  }
+
   return (
     <section>
       <h2>Feedback Inbox</h2>
-      <p className="dashboard-subtitle">localStorage feedback 조회/필터/삭제/issue 템플릿 export</p>
+      <p className="dashboard-subtitle">localStorage feedback 조회/필터/삭제/issue 변환</p>
 
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
         <select value={pathFilter} onChange={(e) => setPathFilter(e.target.value)}>
@@ -112,9 +130,12 @@ export function FeedbackInbox() {
               <td>{new Date(item.createdAt).toLocaleString('ko-KR')}</td>
               <td>{item.path}</td>
               <td>{item.message}</td>
-              <td style={{ display: 'flex', gap: 6 }}>
+              <td style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <button type="button" onClick={() => exportIssue(item)}>
-                  {copiedId === item.id ? 'Copied' : 'Copy issue'}
+                  {copiedId === item.id ? 'Copied template' : 'Copy template'}
+                </button>
+                <button type="button" onClick={() => exportIssueCommand(item)}>
+                  {copiedCommandId === item.id ? 'Copied command' : 'Copy gh issue cmd'}
                 </button>
                 <button type="button" className="btn-danger" onClick={() => removeOne(item.id)}>
                   Delete
