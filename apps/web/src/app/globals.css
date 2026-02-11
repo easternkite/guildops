@@ -1,2 +1,4 @@
 body { margin: 0; font-family: sans-serif; padding: 20px; background: #0b1020; color: #e7ecff; }
 a { color: #91b4ff; }
+input, select, button { padding: 8px 10px; border-radius: 8px; border: 1px solid #334; background: #121932; color: #e7ecff; }
+button { cursor: pointer; }

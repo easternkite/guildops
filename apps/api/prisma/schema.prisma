@@ -1,8 +1,83 @@
 generator client { provider = "prisma-client-js" }
 datasource db { provider = "postgresql" url = env("DATABASE_URL") }
-model Guild { id String @id @default(cuid()) name String game String members Member[] events Event[] }
-model Member { id String @id @default(cuid()) guildId String nickname String role String active Boolean @default(true) guild Guild @relation(fields: [guildId], references: [id]) }
-model Event { id String @id @default(cuid()) guildId String title String startsAt DateTime status String guild Guild @relation(fields: [guildId], references: [id]) }
-model Announcement { id String @id @default(cuid()) guildId String title String content String createdAt DateTime @default(now()) }
-model Reward { id String @id @default(cuid()) guildId String memberId String amount Int reason String createdAt DateTime @default(now()) }
-model AuditLog { id String @id @default(cuid()) actor String action String targetType String targetId String createdAt DateTime @default(now()) }
+
+model Guild {
+  id          String       @id @default(cuid())
+  name        String
+  game        String
+  members     Member[]
+  events      Event[]
+  attendances Attendance[]
+}
+
+model Member {
+  id          String            @id @default(cuid())
+  guildId     String
+  nickname    String
+  role        String
+  active      Boolean           @default(true)
+  guild       Guild             @relation(fields: [guildId], references: [id])
+  checkIns    AttendanceCheckIn[]
+}
+
+model Event {
+  id       String   @id @default(cuid())
+  guildId  String
+  title    String
+  startsAt DateTime
+  status   String
+  guild    Guild    @relation(fields: [guildId], references: [id])
+}
+
+model Attendance {
+  id          String              @id @default(cuid())
+  guildId     String
+  game        String
+  title       String
+  startsAt    DateTime
+  status      String              @default("open")
+  createdAt   DateTime            @default(now())
+  guild       Guild               @relation(fields: [guildId], references: [id])
+  checkIns    AttendanceCheckIn[]
+
+  @@index([guildId, game])
+}
+
+model AttendanceCheckIn {
+  id            String      @id @default(cuid())
+  attendanceId  String
+  memberId      String
+  status        String      @default("checked_in")
+  note          String?
+  checkedInAt   DateTime    @default(now())
+  attendance    Attendance  @relation(fields: [attendanceId], references: [id])
+  member        Member      @relation(fields: [memberId], references: [id])
+
+  @@unique([attendanceId, memberId])
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  guildId   String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Reward {
+  id        String   @id @default(cuid())
+  guildId   String
+  memberId  String
+  amount    Int
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actor      String
+  action     String
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+}
