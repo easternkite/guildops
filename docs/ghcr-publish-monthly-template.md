@@ -39,3 +39,8 @@
 2. 동일 커밋에서 CI + publish가 함께 돌 경우 publish만 집계.
 3. tag 테스트 드라이런은 비고에 표시하고 운영 지표에서 분리 가능.
 4. 월말에 `PROJECTS.md`와 `memory/YYYY-MM-DD.md`에 요약 반영.
+
+## 7) 자동 집계 스크립트
+- 주간 CSV: `scripts/ghcr-report.sh easternkite/guildops 100 weekly`
+- 월간 CSV: `scripts/ghcr-report.sh easternkite/guildops 200 monthly`
+- Raw JSON: `scripts/ghcr-report.sh easternkite/guildops 50 raw`
