@@ -28,3 +28,10 @@ GuildOps 제품/전략 문서의 진입점입니다. 기획, 로드맵, 실행 �
 2. `docs/product/03-roadmap.md`
 3. `docs/product/04-prd-full.md`
 4. `docs/product/05-2week-sprint.md`
+
+## 갱신 규칙 (Maintenance Rules)
+
+- 새 product 문서 추가 시 이 인덱스의 **Product 문서 표**에 즉시 반영한다.
+- heartbeat queue와 연결되는 실행 문서는 **운영/기술 참고 문서**에 링크를 추가한다.
+- 문서 제목/경로가 바뀌면, 같은 PR에서 인덱스 링크를 함께 수정한다.
+- 스프린트 종료 시점(격주)마다 읽기 순서와 우선순위를 재검토한다.
