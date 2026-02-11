@@ -208,4 +208,54 @@ describe('GuildOps API smoke', () => {
       .set('x-guild-role', 'OWNER')
       .expect(200);
   });
+
+  it('member role cannot patch or delete attendance', async () => {
+    const create = await request(app.getHttpServer())
+      .post('/api/attendance')
+      .set('x-guild-role', 'OWNER')
+      .send({ guildId: 'g1', game: 'Lost Ark', title: 'Week 2 raid', startsAt: new Date().toISOString() })
+      .expect(201);
+
+    const attendanceId = create.body.id;
+
+    await request(app.getHttpServer())
+      .patch(`/api/attendance/${attendanceId}`)
+      .set('x-guild-role', 'MEMBER')
+      .send({ status: 'closed' })
+      .expect(403);
+
+    await request(app.getHttpServer())
+      .delete(`/api/attendance/${attendanceId}`)
+      .set('x-guild-role', 'MEMBER')
+      .expect(403);
+  });
+
+  it('admin role can create attendance and check in other members', async () => {
+    const secondMember = await request(app.getHttpServer())
+      .post('/api/members')
+      .send({ guildId: 'g1', nickname: 'Raider', role: 'MEMBER', active: true })
+      .expect(201);
+
+    const create = await request(app.getHttpServer())
+      .post('/api/attendance')
+      .set('x-guild-role', 'ADMIN')
+      .send({ guildId: 'g1', game: 'Lost Ark', title: 'Week 3 raid', startsAt: new Date().toISOString() })
+      .expect(201);
+
+    const attendanceId = create.body.id;
+
+    await request(app.getHttpServer())
+      .post(`/api/attendance/${attendanceId}/check-ins`)
+      .set('x-guild-role', 'ADMIN')
+      .send({ memberId: secondMember.body.id, status: 'late', note: 'traffic' })
+      .expect(201);
+
+    const checkIns = await request(app.getHttpServer())
+      .get(`/api/attendance/${attendanceId}/check-ins`)
+      .expect(200);
+
+    expect(checkIns.body).toHaveLength(1);
+    expect(checkIns.body[0].memberId).toBe(secondMember.body.id);
+    expect(checkIns.body[0].status).toBe('late');
+  });
 });
