@@ -1,4 +1,7 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Actor, ActorContext } from '../../common/authz/actor-context.decorator';
+import { AllowedRoles } from '../../common/authz/allowed-roles.decorator';
+import { RoleHeadersGuard } from '../../common/authz/role-headers.guard';
 import { AttendanceService } from './attendance.service';
 import { CreateAttendanceDto, CreateCheckInDto, UpdateAttendanceDto } from './dto/attendance.dto';
 
@@ -17,18 +20,24 @@ export class AttendanceController {
   }
 
   @Post()
-  create(@Body() body: CreateAttendanceDto, @Headers('x-guild-role') actorRole?: string) {
-    return this.service.create(body, actorRole);
+  @UseGuards(RoleHeadersGuard)
+  @AllowedRoles('OWNER', 'ADMIN')
+  create(@Body() body: CreateAttendanceDto) {
+    return this.service.create(body);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() body: UpdateAttendanceDto, @Headers('x-guild-role') actorRole?: string) {
-    return this.service.update(id, body, actorRole);
+  @UseGuards(RoleHeadersGuard)
+  @AllowedRoles('OWNER', 'ADMIN')
+  update(@Param('id') id: string, @Body() body: UpdateAttendanceDto) {
+    return this.service.update(id, body);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Headers('x-guild-role') actorRole?: string) {
-    return this.service.remove(id, actorRole);
+  @UseGuards(RoleHeadersGuard)
+  @AllowedRoles('OWNER')
+  remove(@Param('id') id: string) {
+    return this.service.remove(id);
   }
 
   @Get(':id/check-ins')
@@ -37,12 +46,9 @@ export class AttendanceController {
   }
 
   @Post(':id/check-ins')
-  recordCheckIn(
-    @Param('id') id: string,
-    @Body() body: CreateCheckInDto,
-    @Headers('x-guild-role') actorRole?: string,
-    @Headers('x-member-id') actorMemberId?: string,
-  ) {
-    return this.service.recordCheckIn(id, body, actorRole, actorMemberId);
+  @UseGuards(RoleHeadersGuard)
+  @AllowedRoles('OWNER', 'ADMIN', 'MEMBER')
+  recordCheckIn(@Param('id') id: string, @Body() body: CreateCheckInDto, @Actor() actor: ActorContext) {
+    return this.service.recordCheckIn(id, body, actor.role, actor.memberId);
   }
 }
