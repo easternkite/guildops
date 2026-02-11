@@ -30,6 +30,12 @@
 - A/B/C 기대 결과 모두 일치
 - tag 기반 publish에서 `ghcr.io/<owner>/guildops-api` 및 `guildops-web` 이미지 태깅 정상
 
+## 최근 드라이런 기록
+- 일시: 2026-02-12 01:xx KST
+- 테스트 태그: `v0.1.0-test`
+- 실행 결과: `Publish Docker Images (GHCR)` run `21912762205` 성공
+- 정리: 원격/로컬 테스트 태그 삭제 완료
+
 ## 장애 시 대응
 - 태그 push인데 publish 미실행: `on.push.tags` 패턴 및 workflow syntax 확인
 - docs-only인데 publish 실행: `paths` 범위 재검토
