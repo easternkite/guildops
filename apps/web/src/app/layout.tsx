@@ -13,6 +13,7 @@ const navItems = [
   { href: '/feedback', label: 'Feedback' },
   { href: '/demo-status', label: 'Demo Status' },
   { href: '/release-signoff', label: 'Release Signoff' },
+  { href: '/release-hub', label: 'Release Hub' },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 GuildOps Console <SignoffReadyBadge />
               </strong>
               <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <a className="topbar-note" href="/release-hub">Hub</a>
                 <a className="topbar-note" href="/release-signoff">Signoff</a>
                 <a className="topbar-note" href="/demo-status">Demo</a>
                 <a className="topbar-note" href="/feedback">Feedback</a>
