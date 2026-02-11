@@ -57,6 +57,10 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
     [members],
   );
 
+  const checkInByMemberId = useMemo(() => new Map(items.map((item) => [item.memberId, item])), [items]);
+
+  const selectedCheckIn = memberId ? checkInByMemberId.get(memberId) : undefined;
+
   const filteredMembers = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     return members.filter((member) => {
@@ -73,11 +77,21 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
     }
   }, [filteredMembers, memberId]);
 
+  const normalizedNote = note.trim();
+  const isDuplicateUpdate =
+    !!selectedCheckIn &&
+    selectedCheckIn.status === status &&
+    (selectedCheckIn.note?.trim() ?? '') === normalizedNote;
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (isDuplicateUpdate) {
+      setError('이미 동일한 체크인 상태입니다. 상태/메모를 변경해 주세요.');
+      return;
+    }
     try {
-      await createItem(`attendance/${params.id}/check-ins`, { memberId, status, note });
+      await createItem(`attendance/${params.id}/check-ins`, { memberId, status, note: normalizedNote || undefined });
       setStatus('checked_in');
       setNote('');
       await load();
@@ -129,19 +143,29 @@ export default function AttendanceCheckInsPage({ params }: { params: { id: strin
           <option value="absent">absent</option>
         </select>
         <input placeholder="note (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
-        <button type="submit" disabled={!memberId}>
-          Record check-in
+        {selectedCheckIn ? (
+          <p style={{ color: '#9fb0da', margin: 0 }}>
+            기존 체크인: <strong>{selectedCheckIn.status}</strong>
+            {selectedCheckIn.note ? ` · ${selectedCheckIn.note}` : ''}
+          </p>
+        ) : null}
+        <button type="submit" disabled={!memberId || isDuplicateUpdate}>
+          {selectedCheckIn ? 'Update check-in' : 'Record check-in'}
         </button>
         {error ? <p style={{ color: 'crimson' }}>{error}</p> : null}
       </form>
 
       <ul style={{ display: 'grid', gap: 10, paddingLeft: 16 }}>
-        {items.map((item) => (
-          <li key={item.id}>
-            <strong>{item.memberId}</strong> · {item.status} · {new Date(item.checkedInAt).toLocaleString()}
-            {item.note ? ` · ${item.note}` : ''}
-          </li>
-        ))}
+        {items.map((item) => {
+          const member = members.find((m) => m.id === item.memberId);
+          return (
+            <li key={item.id}>
+              <strong>{member ? member.nickname : item.memberId}</strong> · {item.status} ·{' '}
+              {new Date(item.checkedInAt).toLocaleString()}
+              {item.note ? ` · ${item.note}` : ''}
+            </li>
+          );
+        })}
       </ul>
     </main>
   );
