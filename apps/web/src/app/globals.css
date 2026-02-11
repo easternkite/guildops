@@ -92,6 +92,16 @@ a:hover { text-decoration: underline; }
   gap: 8px;
 }
 
+.ready-badge {
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #14532d;
+  background: #052e16;
+  color: #86efac;
+}
+
 main, section {
   background: var(--panel);
   border: 1px solid var(--border);

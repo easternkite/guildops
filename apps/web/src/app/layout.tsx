@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { FeedbackCapture } from '../components/feedback-capture';
 import { OpsResultNotice } from '../components/ops-result-notice';
+import { SignoffReadyBadge } from '../components/signoff-ready-badge';
 import './globals.css';
 
 const navItems = [
@@ -32,7 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           <div className="main-panel">
             <header className="topbar">
-              <strong>GuildOps Console</strong>
+              <strong style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                GuildOps Console <SignoffReadyBadge />
+              </strong>
               <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <a className="topbar-note" href="/release-signoff">Signoff</a>
                 <a className="topbar-note" href="/demo-status">Demo</a>
