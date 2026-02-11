@@ -36,3 +36,12 @@ pnpm seed:demo
 - [ ] Announcements CRUD
 - [ ] Attendance check-in update flow
 
+## 4) 운영 리허설(one-shot)
+
+```bash
+cd /path/to/guildops
+pnpm ops:rehearsal
+```
+
+실행 항목: API build → API test → demo reset(guarded) → demo seed
+
