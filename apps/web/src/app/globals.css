@@ -167,6 +167,28 @@ th, td {
 .status-ok { color: #67e8a5; }
 .status-warn { color: #fda4af; }
 
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.status-pill-ok {
+  color: #86efac;
+  background: #052e16;
+  border-color: #14532d;
+}
+
+.status-pill-warn {
+  color: #fecdd3;
+  background: #3f0d17;
+  border-color: #881337;
+}
+
 .kpi-note {
   margin: 8px 0 0;
   color: var(--muted);

@@ -30,7 +30,10 @@ export default async function ReleaseHubPage() {
           <p className={`kpi-value kpi-value-small ${authOk && demoOk ? 'status-ok' : 'status-warn'}`}>
             {authOk && demoOk ? '정상' : '점검 필요'}
           </p>
-          <p className="kpi-note">auth: {authOk ? 'ok' : 'fail'} · demo: {demoOk ? 'ok' : `missing ${missing.length}`}</p>
+          <p className="kpi-note" style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            auth: <span className={`status-pill ${authOk ? 'status-pill-ok' : 'status-pill-warn'}`}>{authOk ? 'ok' : 'fail'}</span>
+            demo: <span className={`status-pill ${demoOk ? 'status-pill-ok' : 'status-pill-warn'}`}>{demoOk ? 'ok' : `missing ${missing.length}`}</span>
+          </p>
           {!demoOk && missing.length > 0 ? <p className="kpi-note">누락: {missing.join(', ')}</p> : null}
           <p className="kpi-note"><Link href="/demo-status">Demo Status 이동</Link></p>
         </article>
