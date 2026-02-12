@@ -1,9 +1,9 @@
+import { DashboardCustomizer } from '../../components/dashboard-customizer';
 import { DashboardRefreshButton } from '../../components/dashboard-refresh-button';
-import { ReleaseReadinessCard } from '../../components/release-readiness-card';
 import { getList } from '../../lib/api';
 
 type Attendance = { id: string; checkInCount?: number };
-type Member = { id: string; active?: boolean };
+type Member = { id: string; guildId?: string; active?: boolean };
 type Event = { id: string; title: string; startsAt: string; status?: string };
 type Health = { ok?: boolean; status?: string; message?: string };
 type DemoChecklist = {
@@ -35,6 +35,13 @@ export default async function DashboardPage() {
   const healthStatus = health?.ok ?? health?.status === 'ok';
   const checklistStatus = checklist?.ok === true;
   const checklistMissing = checklist?.missing ?? [];
+  const guildOptions: string[] = Array.from(
+    new Set<string>(
+      members
+        .map((member: Member) => member.guildId)
+        .filter((guildId: string | undefined): guildId is string => Boolean(guildId)),
+    ),
+  );
 
   return (
     <main>
@@ -44,49 +51,18 @@ export default async function DashboardPage() {
         <DashboardRefreshButton />
       </div>
 
-      <section className="kpi-grid" aria-label="KPI Widgets">
-        <article className="kpi-card">
-          <h3>출석 수</h3>
-          <p className="kpi-value">{attendanceCount}</p>
-          <p className="kpi-note">전체 출석 이벤트</p>
-        </article>
-
-        <article className="kpi-card">
-          <h3>체크인율</h3>
-          <p className="kpi-value">{checkInRate}%</p>
-          <p className="kpi-note">총 체크인 {totalCheckIns}건 기준</p>
-        </article>
-
-        <article className="kpi-card">
-          <h3>활성 멤버</h3>
-          <p className="kpi-value">{activeMembers}</p>
-          <p className="kpi-note">active=true 멤버 수</p>
-        </article>
-
-        <article className="kpi-card">
-          <h3>최근 이벤트</h3>
-          <p className="kpi-value kpi-value-small">{recentEvent ? recentEvent.title : '예정 이벤트 없음'}</p>
-          <p className="kpi-note">
-            {recentEvent ? new Date(recentEvent.startsAt).toLocaleString('ko-KR') : '이벤트를 등록해 보세요'}
-          </p>
-        </article>
-
-        <article className="kpi-card">
-          <h3>운영 상태</h3>
-          <p className={`kpi-value kpi-value-small ${healthStatus && checklistStatus ? 'status-ok' : 'status-warn'}`}>
-            {healthStatus && checklistStatus ? 'API/DEMO 정상' : '점검 필요'}
-          </p>
-          <p className="kpi-note">
-            auth: {healthStatus ? 'ok' : 'fail'} · demo: {checklistStatus ? 'ok' : `missing ${checklistMissing.length}`}
-          </p>
-          {!checklistStatus && checklistMissing.length > 0 ? (
-            <p className="kpi-note">누락: {checklistMissing.join(', ')}</p>
-          ) : null}
-          <p className="kpi-note"><a href="/demo-status">상세 상태 보기</a></p>
-        </article>
-
-        <ReleaseReadinessCard />
-      </section>
+      <DashboardCustomizer
+        guildOptions={guildOptions.length ? guildOptions : ['guild-default']}
+        attendanceCount={attendanceCount}
+        checkInRate={checkInRate}
+        totalCheckIns={totalCheckIns}
+        activeMembers={activeMembers}
+        recentEventTitle={recentEvent ? recentEvent.title : '예정 이벤트 없음'}
+        recentEventAt={recentEvent ? new Date(recentEvent.startsAt).toLocaleString('ko-KR') : '이벤트를 등록해 보세요'}
+        healthStatus={healthStatus}
+        checklistStatus={checklistStatus}
+        checklistMissing={checklistMissing}
+      />
     </main>
   );
 }
