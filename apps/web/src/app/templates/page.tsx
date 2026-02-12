@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { TemplateQuickstart } from '../../components/template-quickstart';
 import { getList } from '../../lib/api';
 
@@ -40,7 +41,9 @@ export default async function TemplatesPage() {
                 </article>
               ))}
             </div>
-            <TemplateQuickstart templates={templates} />
+            <Suspense fallback={null}>
+              <TemplateQuickstart templates={templates} />
+            </Suspense>
           </>
         )}
       </section>
