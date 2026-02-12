@@ -23,6 +23,12 @@ type EventDraft = {
   suggestedHour: string;
 };
 
+type ApplyReport = {
+  createdCount: number;
+  createdTitles: string[];
+  failedReason?: string;
+};
+
 function buildEventDrafts(templateType?: string): EventDraft[] {
   switch (templateType) {
     case 'raid':
@@ -54,6 +60,7 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
   const [game, setGame] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   const [applyMessage, setApplyMessage] = useState<string | null>(null);
+  const [applyReport, setApplyReport] = useState<ApplyReport | null>(null);
 
   const selectedTemplate = useMemo(
     () => templates.find((template: GuildTemplate) => template.type === selectedType) ?? templates[0],
@@ -86,16 +93,25 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
 
     setSubmitting(true);
     setApplyMessage(null);
+    setApplyReport(null);
     try {
       const result = await createItem('events/template-apply', {
         guildId,
         templateType: selectedTemplate.type,
         anchorDate: new Date().toISOString(),
       });
-      const createdCount = Number((result as { createdCount?: number })?.createdCount ?? 0);
+      const payload = result as { createdCount?: number; created?: Array<{ title?: string }> };
+      const createdCount = Number(payload?.createdCount ?? 0);
+      const createdTitles = Array.isArray(payload?.created)
+        ? payload.created.map((item: { title?: string }) => item.title ?? 'untitled')
+        : [];
+
       setApplyMessage(`템플릿 스케줄 적용 완료: ${createdCount}개 이벤트 생성`);
+      setApplyReport({ createdCount, createdTitles });
     } catch (error) {
-      setApplyMessage(`적용 실패: ${toUserError(error)}`);
+      const reason = toUserError(error);
+      setApplyMessage(`적용 실패: ${reason}`);
+      setApplyReport({ createdCount: 0, createdTitles: [], failedReason: reason });
     } finally {
       setSubmitting(false);
     }
@@ -157,6 +173,27 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
         <span className="kpi-note">현재 guildId: {guildId ?? '선택 필요'}</span>
       </div>
       {applyMessage ? <p className="kpi-note" style={{ marginTop: 6 }}>{applyMessage}</p> : null}
+
+      {applyReport ? (
+        <section style={{ marginTop: 10, border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+          <strong>Apply Result Report</strong>
+          <p className="kpi-note" style={{ marginTop: 6 }}>
+            생성 건수: {applyReport.createdCount}
+          </p>
+          {applyReport.createdTitles.length > 0 ? (
+            <ul style={{ marginTop: 6, paddingLeft: 18 }}>
+              {applyReport.createdTitles.map((title: string) => (
+                <li key={title}>{title}</li>
+              ))}
+            </ul>
+          ) : null}
+          {applyReport.failedReason ? (
+            <p className="kpi-note" style={{ marginTop: 6 }}>
+              실패 사유: {applyReport.failedReason}
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       <pre style={{ marginTop: 10, background: '#0f162c', padding: 10, borderRadius: 8, border: '1px solid var(--border)', overflowX: 'auto' }}>
 {JSON.stringify(draft, null, 2)}
