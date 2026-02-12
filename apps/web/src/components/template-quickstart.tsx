@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { createItem, toUserError } from '../lib/api';
+import { createItem, getList, toUserError } from '../lib/api';
 
 type GuildTemplate = {
   type: string;
@@ -33,6 +33,16 @@ type FollowupPreset = {
   enableOpsAlert: boolean;
   enableWeeklyDigest: boolean;
   createDefaultAnnouncement: boolean;
+};
+
+type FollowupHistoryEntry = {
+  executionId: string;
+  guildId: string;
+  templateType: string | null;
+  executedAt: string;
+  status: 'success' | 'failed';
+  steps: Array<{ step: string; status: 'success' | 'failed'; message?: string }>;
+  error?: string;
 };
 
 function buildEventDrafts(templateType?: string): EventDraft[] {
@@ -67,6 +77,9 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
   const [submitting, setSubmitting] = useState(false);
   const [applyMessage, setApplyMessage] = useState<string | null>(null);
   const [applyReport, setApplyReport] = useState<ApplyReport | null>(null);
+  const [followupHistory, setFollowupHistory] = useState<FollowupHistoryEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [historyMessage, setHistoryMessage] = useState<string | null>(null);
   const [followupPreset, setFollowupPreset] = useState<FollowupPreset>({
     enableOpsAlert: true,
     enableWeeklyDigest: true,
@@ -104,6 +117,31 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
     if (!key) return;
     globalThis.localStorage.setItem(key, JSON.stringify(followupPreset));
   }, [followupPreset, selectedTemplate?.type]);
+
+  async function loadFollowupHistory() {
+    if (!guildId) {
+      setHistoryMessage('guildId가 필요합니다.');
+      return;
+    }
+
+    setLoadingHistory(true);
+    setHistoryMessage(null);
+    try {
+      const result = await getList(`events/template-followup-history?guildId=${guildId}&limit=5`);
+      const payload = result as { history?: FollowupHistoryEntry[] };
+      const history = Array.isArray(payload?.history) ? payload.history : [];
+      setFollowupHistory(history);
+      if (history.length === 0) {
+        setHistoryMessage('후속 실행 이력이 없습니다.');
+      }
+    } catch (error) {
+      const reason = toUserError(error);
+      setHistoryMessage(`이력 로드 실패: ${reason}`);
+      setFollowupHistory([]);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }
 
   const draft = {
     guild: {
@@ -271,6 +309,82 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
       <pre style={{ marginTop: 10, background: '#0f162c', padding: 10, borderRadius: 8, border: '1px solid var(--border)', overflowX: 'auto' }}>
 {JSON.stringify(draft, null, 2)}
       </pre>
+
+      <section style={{ marginTop: 16 }}>
+        <h3 style={{ marginTop: 0 }}>Followup History</h3>
+        <p className="kpi-note">최근 후속 실행 이력 (최근 5건)</p>
+
+        <div style={{ marginTop: 8 }}>
+          <button type="button" onClick={loadFollowupHistory} disabled={loadingHistory || !guildId}>
+            {loadingHistory ? '로딩 중...' : '이력 새로고침'}
+          </button>
+        </div>
+
+        {historyMessage && (
+          <p className="kpi-note" style={{ marginTop: 8 }}>
+            {historyMessage}
+          </p>
+        )}
+
+        {followupHistory.length > 0 && (
+          <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+            {followupHistory.map((entry: FollowupHistoryEntry) => (
+              <article
+                key={entry.executionId}
+                style={{
+                  border: `1px solid ${entry.status === 'success' ? '#10b981' : '#f43f5e'}`,
+                  borderRadius: 8,
+                  padding: 10,
+                  background: entry.status === 'success' ? 'rgba(16, 185, 129, 0.05)' : 'rgba(244, 63, 94, 0.05)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <strong>
+                    {entry.status === 'success' ? '✅ 성공' : '❌ 실패'}
+                  </strong>
+                  <span className="kpi-note">
+                    {new Date(entry.executedAt).toLocaleString('ko-KR')}
+                  </span>
+                </div>
+
+                {entry.templateType && (
+                  <p className="kpi-note" style={{ marginTop: 4 }}>
+                    템플릿: {entry.templateType}
+                  </p>
+                )}
+
+                {entry.error && (
+                  <p className="kpi-note" style={{ marginTop: 4, color: '#f43f5e' }}>
+                    에러: {entry.error}
+                  </p>
+                )}
+
+                {entry.steps && entry.steps.length > 0 && (
+                  <div style={{ marginTop: 6 }}>
+                    <strong>실행 스텝:</strong>
+                    <ul style={{ marginTop: 4, paddingLeft: 18 }}>
+                      {entry.steps.map((step, idx) => (
+                        <li key={idx} style={{ fontSize: '0.9em' }}>
+                          {step.step}:{' '}
+                          {step.status === 'success' ? (
+                            <span style={{ color: '#10b981' }}>✓</span>
+                          ) : (
+                            <span style={{ color: '#f43f5e' }}>✗ {step.message || '실패'}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <p className="kpi-note" style={{ marginTop: 4 }}>
+                  Execution ID: <code style={{ fontSize: '0.85em' }}>{entry.executionId}</code>
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
