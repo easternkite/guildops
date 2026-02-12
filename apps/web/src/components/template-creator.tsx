@@ -36,7 +36,7 @@ function saveCustomTemplates(templates: CustomTemplate[]) {
   globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
 }
 
-export function TemplateCreator({ onCreated }: { onCreated?: () => void }) {
+export function TemplateCreator({ templates, onCreated }: { templates: GuildTemplate[]; onCreated?: () => void }) {
   const [type, setType] = useState<GuildTemplateType>('custom');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
