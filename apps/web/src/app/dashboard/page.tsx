@@ -4,7 +4,7 @@ import { getList } from '../../lib/api';
 
 type Attendance = { id: string; checkInCount?: number };
 type Member = { id: string; guildId?: string; active?: boolean };
-type Event = { id: string; title: string; startsAt: string; status?: string };
+type Event = { id: string; guildId?: string; title: string; startsAt: string; status?: string };
 type Health = { ok?: boolean; status?: string; message?: string };
 type DemoChecklist = {
   ok?: boolean;
@@ -12,7 +12,7 @@ type DemoChecklist = {
   missing?: string[];
 };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams?: { guildId?: string } }) {
   const [attendance, members, events, health, checklist] = await Promise.all([
     getList('attendance').catch(() => [] as Attendance[]),
     getList('members').catch(() => [] as Member[]),
@@ -21,14 +21,18 @@ export default async function DashboardPage() {
     getList('auth/demo/checklist-health').catch(() => null as DemoChecklist | null),
   ]);
 
+  const guildId = searchParams?.guildId;
+  const scopedMembers = guildId ? members.filter((member: Member) => member.guildId === guildId) : members;
+  const scopedEvents = guildId ? events.filter((event: Event & { guildId?: string }) => event.guildId === guildId) : events;
+
   const attendanceCount = attendance.length;
   const totalCheckIns = attendance.reduce((sum: number, item: Attendance) => sum + (item.checkInCount ?? 0), 0);
-  const activeMembers = members.filter((member: Member) => member.active !== false).length;
+  const activeMembers = scopedMembers.filter((member: Member) => member.active !== false).length;
 
   const denominator = attendanceCount * Math.max(activeMembers, 1);
   const checkInRate = denominator === 0 ? 0 : Math.round((totalCheckIns / denominator) * 100);
 
-  const recentEvent = [...events]
+  const recentEvent = [...scopedEvents]
     .sort((a: Event, b: Event) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .find((event: Event) => event.status !== 'done' && event.status !== 'closed');
 
