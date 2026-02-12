@@ -25,6 +25,22 @@ export class UeventsController {
     return this.service.applyTemplateSchedule(body);
   }
 
+  @Post('template-followup-apply')
+  applyTemplateFollowup(
+    @Body()
+    body: {
+      guildId: string;
+      templateType: string;
+      preset: {
+        enableOpsAlert?: boolean;
+        enableWeeklyDigest?: boolean;
+        createDefaultAnnouncement?: boolean;
+      };
+    },
+  ) {
+    return this.service.applyTemplateFollowup(body);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() body: any) {
     return this.service.update(id, body);
