@@ -2,12 +2,19 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 type RewardSummary = {
+  rank: number;
   guildId: string;
   memberId: string;
   nickname: string;
   attendancePoints: number;
   contributionPoints: number;
   totalPoints: number;
+};
+
+type SeasonWindow = {
+  seasonId: string;
+  startAt: Date;
+  endAt: Date;
 };
 
 @Injectable()
@@ -24,8 +31,34 @@ export class UrewardsService {
     return found;
   }
 
-  async summarizeByGuild(guildId: string) {
+  async summarizeByGuild(guildId: string, seasonWindow?: SeasonWindow) {
     await this.ensureGuildExists(guildId);
+
+    const attendanceWhere = seasonWindow
+      ? {
+          attendance: {
+            guildId,
+            startsAt: {
+              gte: seasonWindow.startAt,
+              lt: seasonWindow.endAt,
+            },
+          },
+          status: { in: ['checked_in', 'present'] },
+        }
+      : {
+          attendance: { guildId },
+          status: { in: ['checked_in', 'present'] },
+        };
+
+    const rewardsWhere = seasonWindow
+      ? {
+          guildId,
+          createdAt: {
+            gte: seasonWindow.startAt,
+            lt: seasonWindow.endAt,
+          },
+        }
+      : { guildId };
 
     const [members, checkIns, rewards] = await Promise.all([
       this.prisma.member.findMany({
@@ -33,14 +66,11 @@ export class UrewardsService {
         select: { id: true, nickname: true },
       }),
       this.prisma.attendanceCheckIn.findMany({
-        where: {
-          attendance: { guildId },
-          status: { in: ['checked_in', 'present'] },
-        },
+        where: attendanceWhere,
         select: { memberId: true },
       }),
       this.prisma.reward.findMany({
-        where: { guildId },
+        where: rewardsWhere,
         select: { memberId: true, amount: true },
       }),
     ]);
@@ -57,7 +87,7 @@ export class UrewardsService {
       contributionPointsByMember.set(reward.memberId, current + reward.amount);
     }
 
-    const summary: RewardSummary[] = members
+    const summary = members
       .map((member: { id: string; nickname: string }) => {
         const attendancePoints = attendancePointsByMember.get(member.id) ?? 0;
         const contributionPoints = contributionPointsByMember.get(member.id) ?? 0;
@@ -70,10 +100,21 @@ export class UrewardsService {
           totalPoints: attendancePoints + contributionPoints,
         };
       })
-      .sort((a: RewardSummary, b: RewardSummary) => b.totalPoints - a.totalPoints);
+      .sort((a, b) => b.totalPoints - a.totalPoints)
+      .map((entry, index) => ({
+        ...entry,
+        rank: index + 1,
+      })) as RewardSummary[];
 
     return {
       guildId,
+      season: seasonWindow
+        ? {
+            seasonId: seasonWindow.seasonId,
+            startAt: seasonWindow.startAt.toISOString(),
+            endAt: seasonWindow.endAt.toISOString(),
+          }
+        : null,
       scoringRule: {
         attendanceCheckIn: 10,
         contribution: 'sum(reward.amount)',
