@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 type GuildTemplateType = 'raid' | 'esports' | 'community' | 'custom';
 
@@ -27,6 +27,11 @@ type CustomTemplate = {
   createdAt: string;
 };
 
+type EditTemplate = {
+  template: CustomTemplate;
+  onClose: () => void;
+};
+
 const STORAGE_KEY = 'guildops-custom-templates';
 
 function loadCustomTemplates(): CustomTemplate[] {
@@ -43,7 +48,10 @@ function saveCustomTemplates(templates: CustomTemplate[]) {
   globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
 }
 
-export function TemplateCreator({ templates, onCreated }: { templates: GuildTemplate[]; onCreated?: () => void }) {
+export function TemplateCreator({ templates, onCreated, onEditRequested }: { templates: GuildTemplate[]; onCreated?: () => void; onEditRequested?: (template: CustomTemplate) => void }) {
+  const [mode, setMode] = useState<'create' | 'edit'>('create');
+  const [editingTemplate, setEditingTemplate] = useState<CustomTemplate | null>(null);
+
   const [type, setType] = useState<GuildTemplateType>('custom');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -57,6 +65,39 @@ export function TemplateCreator({ templates, onCreated }: { templates: GuildTemp
   const rolesList = roles.split(',').map(r => r.trim()).filter(Boolean);
   const isValid = name.trim() !== '' && description.trim() !== '' && rolesList.length > 0;
 
+  // Handle edit mode
+  useEffect(() => {
+    if (mode === 'edit' && editingTemplate) {
+      setType(editingTemplate.type);
+      setName(editingTemplate.name);
+      setDescription(editingTemplate.description);
+      setRoles(editingTemplate.defaults.roles.join(', '));
+      setEventCadence(editingTemplate.defaults.eventCadence);
+      setAttendancePolicy(editingTemplate.defaults.attendancePolicy);
+      setAnnouncementStyle(editingTemplate.defaults.announcementStyle);
+    }
+  }, [mode, editingTemplate]);
+
+  function handleEditTemplate(template: CustomTemplate) {
+    setMode('edit');
+    setEditingTemplate(template);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function resetForm() {
+    setMode('create');
+    setEditingTemplate(null);
+    setType('custom');
+    setName('');
+    setDescription('');
+    setRoles('');
+    setEventCadence('');
+    setAttendancePolicy('');
+    setAnnouncementStyle('');
+    setError(null);
+  }
+
   function handleSubmit() {
     if (!isValid) {
       setError('필수 항목(이름, 설명, 역할)을 입력해 주세요.');
@@ -68,33 +109,46 @@ export function TemplateCreator({ templates, onCreated }: { templates: GuildTemp
 
     try {
       const templates = loadCustomTemplates();
-      const newTemplate: CustomTemplate = {
-        id: `custom-${Date.now()}`,
-        type,
-        name: name.trim(),
-        description: description.trim(),
-        defaults: {
-          roles: rolesList,
-          eventCadence: eventCadence.trim(),
-          attendancePolicy: attendancePolicy.trim(),
-          announcementStyle: announcementStyle.trim(),
-        },
-        createdAt: new Date().toISOString(),
-      };
 
-      templates.push(newTemplate);
+      if (mode === 'create') {
+        const newTemplate: CustomTemplate = {
+          id: `custom-${Date.now()}`,
+          type,
+          name: name.trim(),
+          description: description.trim(),
+          defaults: {
+            roles: rolesList,
+            eventCadence: eventCadence.trim(),
+            attendancePolicy: attendancePolicy.trim(),
+            announcementStyle: announcementStyle.trim(),
+          },
+          createdAt: new Date().toISOString(),
+        };
+
+        templates.push(newTemplate);
+      } else if (mode === 'edit' && editingTemplate) {
+        const index = templates.findIndex((t) => t.id === editingTemplate.id);
+        if (index === -1) throw new Error('Template not found');
+
+        templates[index] = {
+          ...editingTemplate,
+          type,
+          name: name.trim(),
+          description: description.trim(),
+          defaults: {
+            roles: rolesList,
+            eventCadence: eventCadence.trim(),
+            attendancePolicy: attendancePolicy.trim(),
+            announcementStyle: announcementStyle.trim(),
+          },
+        };
+      }
+
       saveCustomTemplates(templates);
+      resetForm();
 
-      // Reset form
-      setType('custom');
-      setName('');
-      setDescription('');
-      setRoles('');
-      setEventCadence('');
-      setAttendancePolicy('');
-      setAnnouncementStyle('');
-
-      if (onCreated) onCreated();
+      if (mode === 'create' && onCreated) onCreated();
+      if (onEditRequested) onEditRequested();
     } catch (err) {
       setError('템플릿 저장에 실패했습니다. 다시 시도해 주세요.');
     } finally {
@@ -104,8 +158,22 @@ export function TemplateCreator({ templates, onCreated }: { templates: GuildTemp
 
   return (
     <section style={{ border: '1px solid var(--border)', borderRadius: 8, padding: 12, marginTop: 12 }}>
-      <h3 style={{ marginTop: 0 }}>새 템플릿 생성</h3>
-      <p className="kpi-note">사용자 정의 템플릿을 생성합니다.</p>
+      <h3 style={{ marginTop: 0 }}>
+        {mode === 'create' ? '새 템플릿 생성' : '템플릿 수정'}
+      </h3>
+      <p className="kpi-note">
+        {mode === 'create' ? '사용자 정의 템플릿을 생성합니다.' : '기존 템플릿을 수정합니다.'}
+      </p>
+
+      {mode === 'edit' && (
+        <button
+          type="button"
+          onClick={resetForm}
+          style={{ marginTop: 8, padding: '4px 8px', borderRadius: 4 }}
+        >
+          취소 (새로 만들기)
+        </button>
+      )}
 
       <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} style={{ display: 'grid', gap: 10, marginTop: 10 }}>
         <div>
@@ -114,6 +182,7 @@ export function TemplateCreator({ templates, onCreated }: { templates: GuildTemp
             <select
               value={type}
               onChange={(e) => setType(e.target.value as GuildTemplateType)}
+              disabled={mode === 'edit'}
               style={{ marginLeft: 8, padding: '4px 8px', borderRadius: 4 }}
             >
               <option value="custom">사용자 정의</option>
@@ -213,7 +282,7 @@ export function TemplateCreator({ templates, onCreated }: { templates: GuildTemp
 
         <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           <button type="submit" disabled={submitting || !isValid}>
-            {submitting ? '저장 중...' : '템플릿 생성'}
+            {submitting ? '저장 중...' : mode === 'create' ? '템플릿 생성' : '업데이트'}
           </button>
         </div>
       </form>
@@ -221,7 +290,7 @@ export function TemplateCreator({ templates, onCreated }: { templates: GuildTemp
   );
 }
 
-export function CustomTemplatesList({ templates, onDelete }: { templates: CustomTemplate[]; onDelete?: (id: string) => void }) {
+export function CustomTemplatesList({ templates, onEdit, onDelete }: { templates: CustomTemplate[]; onEdit?: (template: CustomTemplate) => void; onDelete?: (id: string) => void }) {
   if (templates.length === 0) {
     return (
       <p className="kpi-note" style={{ marginTop: 12 }}>
@@ -242,7 +311,9 @@ export function CustomTemplatesList({ templates, onDelete }: { templates: Custom
               borderRadius: 8,
               padding: 10,
               background: 'var(--panel-bg)',
+              cursor: 'pointer',
             }}
+            onClick={() => onEdit?.(template)}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
@@ -254,20 +325,36 @@ export function CustomTemplatesList({ templates, onDelete }: { templates: Custom
                   타입: {template.type}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => onDelete?.(template.id)}
-                style={{
-                  padding: '4px 8px',
-                  background: '#f43f5e',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                }}
-              >
-                삭제
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(template); }}
+                  style={{
+                    padding: '4px 8px',
+                    background: '#3b82f6',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                  }}
+                >
+                  편집
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(template.id); }}
+                  style={{
+                    padding: '4px 8px',
+                    background: '#f43f5e',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 4,
+                    cursor: 'pointer',
+                  }}
+                >
+                  삭제
+                </button>
+              </div>
             </div>
             <ul style={{ marginTop: 8, paddingLeft: 18, fontSize: '0.9em' }}>
               <li>역할: {template.defaults.roles.join(', ')}</li>
