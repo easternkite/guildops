@@ -3,6 +3,7 @@ import { Suspense } from 'react';
 import { FeedbackCapture } from '../components/feedback-capture';
 import { GuildSwitcher } from '../components/guild-switcher';
 import { OpsResultNotice } from '../components/ops-result-notice';
+import { RealtimeRefreshBridge } from '../components/realtime-refresh-bridge';
 import { SignoffReadyBadge } from '../components/signoff-ready-badge';
 import './globals.css';
 
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <a className="topbar-note" href="https://github.com/easternkite/guildops/blob/main/RUNBOOK.md" target="_blank" rel="noreferrer">
                   RUNBOOK
                 </a>
+                <RealtimeRefreshBridge />
                 <span className="topbar-note">MVP Stabilization</span>
               </span>
             </header>
