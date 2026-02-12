@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { Suspense } from 'react';
 import { FeedbackCapture } from '../components/feedback-capture';
+import { GuildSwitcher } from '../components/guild-switcher';
 import { OpsResultNotice } from '../components/ops-result-notice';
 import { SignoffReadyBadge } from '../components/signoff-ready-badge';
 import './globals.css';
@@ -41,6 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 GuildOps Console <SignoffReadyBadge />
               </strong>
               <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <Suspense fallback={null}>
+                  <GuildSwitcher />
+                </Suspense>
                 <a className="topbar-note" href="/release-hub">Hub</a>
                 <a className="topbar-note" href="/release-signoff">Signoff</a>
                 <a className="topbar-note" href="/demo-status">Demo</a>
