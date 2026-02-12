@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Headers, Post, Query, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { TokenLoginDto } from './dto/auth-user.dto';
@@ -51,5 +51,11 @@ export class AuthController {
   @Get('demo/checklist-health')
   demoChecklistHealth() {
     return this.authService.getDemoChecklistHealth();
+  }
+
+  @Get('discord/role-sync-preview')
+  discordRoleSyncPreview(@Query('guildId') guildId?: string) {
+    if (!guildId) throw new BadRequestException('guildId query is required');
+    return this.authService.getDiscordRoleSyncPreview(guildId);
   }
 }
