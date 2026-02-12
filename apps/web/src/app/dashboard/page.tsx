@@ -12,14 +12,44 @@ type DemoChecklist = {
   missing?: string[];
 };
 
+type ProbeResult<T> = {
+  data: T;
+  ok: boolean;
+  latencyMs: number;
+};
+
+async function probe<T>(runner: () => Promise<T>, fallback: T): Promise<ProbeResult<T>> {
+  const startedAt = Date.now();
+  try {
+    const data = await runner();
+    return {
+      data,
+      ok: true,
+      latencyMs: Date.now() - startedAt,
+    };
+  } catch {
+    return {
+      data: fallback,
+      ok: false,
+      latencyMs: Date.now() - startedAt,
+    };
+  }
+}
+
 export default async function DashboardPage({ searchParams }: { searchParams?: { guildId?: string } }) {
-  const [attendance, members, events, health, checklist] = await Promise.all([
-    getList('attendance').catch(() => [] as Attendance[]),
-    getList('members').catch(() => [] as Member[]),
-    getList('events').catch(() => [] as Event[]),
-    getList('auth/discord/health').catch(() => null as Health | null),
-    getList('auth/demo/checklist-health').catch(() => null as DemoChecklist | null),
+  const [attendanceProbe, membersProbe, eventsProbe, healthProbe, checklistProbe] = await Promise.all([
+    probe(() => getList('attendance'), [] as Attendance[]),
+    probe(() => getList('members'), [] as Member[]),
+    probe(() => getList('events'), [] as Event[]),
+    probe(() => getList('auth/discord/health'), null as Health | null),
+    probe(() => getList('auth/demo/checklist-health'), null as DemoChecklist | null),
   ]);
+
+  const attendance = attendanceProbe.data;
+  const members = membersProbe.data;
+  const events = eventsProbe.data;
+  const health = healthProbe.data;
+  const checklist = checklistProbe.data;
 
   const guildId = searchParams?.guildId;
   const scopedMembers = guildId ? members.filter((member: Member) => member.guildId === guildId) : members;
@@ -47,6 +77,10 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     ),
   );
 
+  const probes = [attendanceProbe, membersProbe, eventsProbe, healthProbe, checklistProbe];
+  const avgLatency = Math.round(probes.reduce((sum: number, probeResult: ProbeResult<unknown>) => sum + probeResult.latencyMs, 0) / probes.length);
+  const errorCount = probes.filter((probeResult: ProbeResult<unknown>) => !probeResult.ok).length;
+
   return (
     <main>
       <h2>Dashboard</h2>
@@ -54,6 +88,17 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
       <div style={{ marginTop: 8 }}>
         <DashboardRefreshButton />
       </div>
+
+      <section style={{ marginTop: 12 }}>
+        <h3 style={{ marginTop: 0 }}>Observability</h3>
+        <p className="kpi-note">핵심 API probe 기반 latency/error 지표</p>
+        <div className="hub-action-links" style={{ marginTop: 8 }}>
+          <span className="status-pill status-pill-ok">avg latency {avgLatency}ms</span>
+          <span className={errorCount === 0 ? 'status-pill status-pill-ok' : 'status-pill status-pill-warn'}>
+            probe errors {errorCount}/{probes.length}
+          </span>
+        </div>
+      </section>
 
       <DashboardCustomizer
         guildOptions={guildOptions.length ? guildOptions : ['guild-default']}
