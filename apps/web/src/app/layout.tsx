@@ -20,6 +20,7 @@ const navItems = [
   { href: '/rbac', label: 'RBAC' },
   { href: '/audit-logs', label: 'Audit Logs' },
   { href: '/invite-onboarding', label: 'Invite Flow' },
+  { href: '/templates', label: 'Templates' },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
