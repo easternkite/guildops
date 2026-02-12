@@ -228,4 +228,51 @@ th, td {
 
 @media (max-width: 640px) {
   .kpi-grid { grid-template-columns: 1fr; }
+
+  .content {
+    padding: 12px;
+  }
+
+  .topbar {
+    height: auto;
+    padding: 8px 12px;
+    align-items: flex-start;
+    gap: 8px;
+    flex-direction: column;
+  }
+
+  .topbar > strong,
+  .topbar > span {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .feedback-panel,
+  .ops-notice {
+    padding: 8px 12px;
+  }
+
+  .feedback-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .feedback-form input,
+  .feedback-form button {
+    width: 100%;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  button,
+  input,
+  select {
+    min-height: 40px;
+  }
 }
