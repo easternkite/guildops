@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
@@ -54,6 +54,37 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) throw new UnauthorizedException('User not found');
     return user;
+  }
+
+  async getDiscordRoleSyncPreview(guildId: string) {
+    const guild = await this.prisma.guild.findUnique({ where: { id: guildId }, select: { id: true, name: true } });
+    if (!guild) throw new BadRequestException(`Guild ${guildId} does not exist`);
+
+    const members = await this.prisma.member.findMany({
+      where: { guildId },
+      select: { id: true, nickname: true, role: true, active: true },
+      orderBy: { nickname: 'asc' },
+    });
+
+    const roleMap: Record<string, string> = {
+      OWNER: 'Guild Owner',
+      ADMIN: 'Guild Admin',
+      MEMBER: 'Guild Member',
+    };
+
+    return {
+      guild: { id: guild.id, name: guild.name },
+      dryRun: true,
+      target: 'discord-role-sync',
+      syncedAt: new Date().toISOString(),
+      actions: members.map((member: { id: string; nickname: string; role: string; active: boolean }) => ({
+        memberId: member.id,
+        nickname: member.nickname,
+        active: member.active,
+        appRole: member.role,
+        expectedDiscordRole: roleMap[member.role] ?? `Guild ${member.role}`,
+      })),
+    };
   }
 
   async getDemoChecklistHealth() {
