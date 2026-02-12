@@ -108,6 +108,31 @@ export class UeventsService {
     };
   }
 
+  async getTemplateFollowupHistory(query: { guildId?: string; limit?: number }) {
+    const limit = Math.max(1, Math.min(query.limit ?? 20, 100));
+
+    const logs = await this.prisma.auditLog.findMany({
+      where: {
+        actor: 'template-followup',
+        action: { in: ['template_followup_apply_success', 'template_followup_apply_failed'] },
+        ...(query.guildId ? { targetId: query.guildId } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return {
+      count: logs.length,
+      items: logs.map((log: (typeof logs)[number]) => ({
+        id: log.id,
+        guildId: log.targetId,
+        status: log.action === 'template_followup_apply_success' ? 'success' : 'failed',
+        action: log.action,
+        createdAt: log.createdAt,
+      })),
+    };
+  }
+
   async applyTemplateFollowup(body: {
     guildId: string;
     templateType: string;

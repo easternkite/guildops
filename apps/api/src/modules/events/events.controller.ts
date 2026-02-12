@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { UeventsService } from './events.service';
 
 @Controller('events')
@@ -23,6 +23,11 @@ export class UeventsController {
   @Post('template-apply')
   applyTemplateSchedule(@Body() body: { guildId: string; templateType: string; anchorDate?: string }) {
     return this.service.applyTemplateSchedule(body);
+  }
+
+  @Get('template-followup-history')
+  getTemplateFollowupHistory(@Query('guildId') guildId?: string, @Query('limit') limit?: string) {
+    return this.service.getTemplateFollowupHistory({ guildId, limit: limit ? Number(limit) : undefined });
   }
 
   @Post('template-followup-apply')
