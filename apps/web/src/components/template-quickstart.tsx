@@ -80,6 +80,8 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
   const [followupHistory, setFollowupHistory] = useState<FollowupHistoryEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [historyMessage, setHistoryMessage] = useState<string | null>(null);
+  const [retryingFollowup, setRetryingFollowup] = useState(false);
+  const [followupMessage, setFollowupMessage] = useState<string | null>(null);
   const [followupPreset, setFollowupPreset] = useState<FollowupPreset>({
     enableOpsAlert: true,
     enableWeeklyDigest: true,
@@ -140,6 +142,30 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
       setFollowupHistory([]);
     } finally {
       setLoadingHistory(false);
+    }
+  }
+
+  async function handleRetryFollowup() {
+    if (!guildId) {
+      setFollowupMessage('guildId가 필요합니다.');
+      return;
+    }
+
+    setRetryingFollowup(true);
+    setFollowupMessage(null);
+    try {
+      const result = await createItem('events/template-followup-apply', {
+        guildId,
+        followupPreset,
+      });
+      setFollowupMessage(`후속 설정 재실행 완료`);
+      // 재실행 후 이력 새로고침
+      await loadFollowupHistory();
+    } catch (error) {
+      const reason = toUserError(error);
+      setFollowupMessage(`재실행 실패: ${reason}`);
+    } finally {
+      setRetryingFollowup(false);
     }
   }
 
@@ -326,6 +352,12 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
           </p>
         )}
 
+        {followupMessage && (
+          <p className="kpi-note" style={{ marginTop: 8, color: followupMessage.startsWith('완료') ? '#10b981' : '#f43f5e' }}>
+            {followupMessage}
+          </p>
+        )}
+
         {followupHistory.length > 0 && (
           <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
             {followupHistory.map((entry: FollowupHistoryEntry) => (
@@ -357,6 +389,27 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
                   <p className="kpi-note" style={{ marginTop: 4, color: '#f43f5e' }}>
                     에러: {entry.error}
                   </p>
+                )}
+
+                {entry.status === 'failed' && (
+                  <div style={{ marginTop: 6 }}>
+                    <button
+                      type="button"
+                      onClick={handleRetryFollowup}
+                      disabled={retryingFollowup}
+                      style={{
+                        padding: '4px 8px',
+                        fontSize: '0.85em',
+                        background: '#f43f5e',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 4,
+                        cursor: retryingFollowup ? 'not-allowed' : 'pointer',
+                      }}
+                    >
+                      {retryingFollowup ? '재실행 중...' : '🔄 재시도'}
+                    </button>
+                  </div>
                 )}
 
                 {entry.steps && entry.steps.length > 0 && (
