@@ -3,8 +3,10 @@
 import { useState } from 'react';
 import { TemplateCreator, CustomTemplatesList } from './template-creator';
 
+type GuildTemplateType = 'raid' | 'esports' | 'community' | 'custom';
+
 type GuildTemplate = {
-  type: string;
+  type: GuildTemplateType;
   name: string;
   description: string;
   defaults: {
@@ -17,7 +19,7 @@ type GuildTemplate = {
 
 type CustomTemplate = {
   id: string;
-  type: string;
+  type: GuildTemplateType;
   name: string;
   description: string;
   defaults: {

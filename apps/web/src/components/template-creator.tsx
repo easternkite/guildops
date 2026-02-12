@@ -110,6 +110,8 @@ export function TemplateCreator({ templates, onCreated, onEditRequested }: { tem
     try {
       const templates = loadCustomTemplates();
 
+      let updatedTemplate: CustomTemplate | undefined;
+
       if (mode === 'create') {
         const newTemplate: CustomTemplate = {
           id: `custom-${Date.now()}`,
@@ -130,7 +132,7 @@ export function TemplateCreator({ templates, onCreated, onEditRequested }: { tem
         const index = templates.findIndex((t) => t.id === editingTemplate.id);
         if (index === -1) throw new Error('Template not found');
 
-        templates[index] = {
+        updatedTemplate = {
           ...editingTemplate,
           type,
           name: name.trim(),
@@ -142,13 +144,15 @@ export function TemplateCreator({ templates, onCreated, onEditRequested }: { tem
             announcementStyle: announcementStyle.trim(),
           },
         };
+
+        templates[index] = updatedTemplate;
       }
 
       saveCustomTemplates(templates);
       resetForm();
 
       if (mode === 'create' && onCreated) onCreated();
-      if (onEditRequested) onEditRequested();
+      if (mode === 'edit' && onEditRequested && updatedTemplate) onEditRequested(updatedTemplate);
     } catch (err) {
       setError('템플릿 저장에 실패했습니다. 다시 시도해 주세요.');
     } finally {
