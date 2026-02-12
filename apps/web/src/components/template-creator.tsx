@@ -148,7 +148,7 @@ export function TemplateCreator({ templates, onCreated, onEditRequested }: { tem
       resetForm();
 
       if (mode === 'create' && onCreated) onCreated();
-      if (onEditRequested) onEditRequested();
+      if (mode === 'edit' && onEditRequested) onEditRequested(updatedTemplate);
     } catch (err) {
       setError('템플릿 저장에 실패했습니다. 다시 시도해 주세요.');
     } finally {
