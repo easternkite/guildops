@@ -12,6 +12,8 @@
     "ops:rehearsal:report": "bash scripts/rehearsal-report.sh",
     "ops:release-check": "bash scripts/release-checklist.sh",
     "ops:demo-status:snapshot": "bash scripts/demo-status-snapshot.sh",
-    "ops:alert:discord": "bash scripts/discord-ops-alert.sh"
+    "ops:alert:discord": "bash scripts/discord-ops-alert.sh",
+    "ops:backup:snapshot": "bash scripts/backup-snapshot.sh",
+    "ops:restore:drill": "bash scripts/restore-drill.sh"
   }
 }
