@@ -9,6 +9,12 @@ type TemplateDraft = {
   hour: number;
 };
 
+type FollowupPreset = {
+  enableOpsAlert?: boolean;
+  enableWeeklyDigest?: boolean;
+  createDefaultAnnouncement?: boolean;
+};
+
 function buildTemplateDrafts(templateType: TemplateType): TemplateDraft[] {
   switch (templateType) {
     case 'raid':
@@ -94,6 +100,66 @@ export class UeventsService {
       templateType,
       createdCount: created.length,
       created,
+    };
+  }
+
+  async applyTemplateFollowup(body: { guildId: string; templateType: string; preset: FollowupPreset }) {
+    const guild = await this.prisma.guild.findUnique({ where: { id: body.guildId }, select: { id: true, name: true } });
+    if (!guild) throw new BadRequestException(`Guild ${body.guildId} does not exist`);
+
+    const templateType = body.templateType.toLowerCase() as TemplateType;
+    if (!['raid', 'esports', 'community'].includes(templateType)) {
+      throw new BadRequestException('templateType must be one of: raid, esports, community');
+    }
+
+    const preset = body.preset ?? {};
+    const actions: string[] = [];
+
+    if (preset.createDefaultAnnouncement) {
+      await this.prisma.announcement.create({
+        data: {
+          guildId: body.guildId,
+          title: `[${templateType.toUpperCase()}] 운영 시작 안내`,
+          content: `${guild.name} 길드 템플릿 적용이 완료되었습니다. 기본 운영 규칙을 확인해 주세요.`,
+        },
+      });
+      actions.push('default-announcement-created');
+    }
+
+    if (preset.enableOpsAlert) {
+      await this.prisma.auditLog.create({
+        data: {
+          actor: 'template-followup',
+          action: 'enable_ops_alert',
+          targetType: 'guild',
+          targetId: body.guildId,
+        },
+      });
+      actions.push('ops-alert-enabled');
+    }
+
+    if (preset.enableWeeklyDigest) {
+      await this.prisma.auditLog.create({
+        data: {
+          actor: 'template-followup',
+          action: 'enable_weekly_digest',
+          targetType: 'guild',
+          targetId: body.guildId,
+        },
+      });
+      actions.push('weekly-digest-enabled');
+    }
+
+    return {
+      guildId: body.guildId,
+      templateType,
+      appliedPreset: {
+        enableOpsAlert: Boolean(preset.enableOpsAlert),
+        enableWeeklyDigest: Boolean(preset.enableWeeklyDigest),
+        createDefaultAnnouncement: Boolean(preset.createDefaultAnnouncement),
+      },
+      actions,
+      appliedAt: new Date().toISOString(),
     };
   }
 
