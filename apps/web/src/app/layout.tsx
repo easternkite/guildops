@@ -14,6 +14,7 @@ const navItems = [
   { href: '/demo-status', label: 'Demo Status' },
   { href: '/release-signoff', label: 'Release Signoff' },
   { href: '/release-hub', label: 'Release Hub' },
+  { href: '/rbac', label: 'RBAC' },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
