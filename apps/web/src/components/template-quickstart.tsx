@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { createItem, toUserError } from '../lib/api';
 
@@ -27,6 +27,12 @@ type ApplyReport = {
   createdCount: number;
   createdTitles: string[];
   failedReason?: string;
+};
+
+type FollowupPreset = {
+  enableOpsAlert: boolean;
+  enableWeeklyDigest: boolean;
+  createDefaultAnnouncement: boolean;
 };
 
 function buildEventDrafts(templateType?: string): EventDraft[] {
@@ -61,6 +67,11 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
   const [submitting, setSubmitting] = useState(false);
   const [applyMessage, setApplyMessage] = useState<string | null>(null);
   const [applyReport, setApplyReport] = useState<ApplyReport | null>(null);
+  const [followupPreset, setFollowupPreset] = useState<FollowupPreset>({
+    enableOpsAlert: true,
+    enableWeeklyDigest: true,
+    createDefaultAnnouncement: true,
+  });
 
   const selectedTemplate = useMemo(
     () => templates.find((template: GuildTemplate) => template.type === selectedType) ?? templates[0],
@@ -68,6 +79,31 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
   );
 
   const eventDrafts = useMemo(() => buildEventDrafts(selectedTemplate?.type), [selectedTemplate?.type]);
+
+  useEffect(() => {
+    const key = selectedTemplate?.type ? `guildops:followup:${selectedTemplate.type}` : null;
+    if (!key) return;
+
+    const saved = globalThis.localStorage.getItem(key);
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved) as FollowupPreset;
+      setFollowupPreset({
+        enableOpsAlert: parsed.enableOpsAlert !== false,
+        enableWeeklyDigest: parsed.enableWeeklyDigest !== false,
+        createDefaultAnnouncement: parsed.createDefaultAnnouncement !== false,
+      });
+    } catch {
+      // ignore broken local draft
+    }
+  }, [selectedTemplate?.type]);
+
+  useEffect(() => {
+    const key = selectedTemplate?.type ? `guildops:followup:${selectedTemplate.type}` : null;
+    if (!key) return;
+    globalThis.localStorage.setItem(key, JSON.stringify(followupPreset));
+  }, [followupPreset, selectedTemplate?.type]);
 
   const draft = {
     guild: {
@@ -78,6 +114,7 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
     },
     defaults: selectedTemplate?.defaults,
     calendarDraft: eventDrafts,
+    followupPreset,
   };
 
   async function handleApplyTemplate() {
@@ -165,6 +202,42 @@ export function TemplateQuickstart({ templates }: { templates: GuildTemplate[] }
           ))}
         </ul>
       </div>
+
+      <section style={{ marginTop: 10, border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+        <strong>Post-Apply Auto Setup (MVP)</strong>
+        <div style={{ display: 'grid', gap: 6, marginTop: 6 }}>
+          <label>
+            <input
+              type="checkbox"
+              checked={followupPreset.enableOpsAlert}
+              onChange={(event) =>
+                setFollowupPreset((prev: FollowupPreset) => ({ ...prev, enableOpsAlert: event.target.checked }))
+              }
+            />{' '}
+            운영 알림 자동화 활성화
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={followupPreset.enableWeeklyDigest}
+              onChange={(event) =>
+                setFollowupPreset((prev: FollowupPreset) => ({ ...prev, enableWeeklyDigest: event.target.checked }))
+              }
+            />{' '}
+            주간 운영 리포트 digest 활성화
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={followupPreset.createDefaultAnnouncement}
+              onChange={(event) =>
+                setFollowupPreset((prev: FollowupPreset) => ({ ...prev, createDefaultAnnouncement: event.target.checked }))
+              }
+            />{' '}
+            기본 공지 템플릿 자동 생성
+          </label>
+        </div>
+      </section>
 
       <div style={{ marginTop: 10, display: 'flex', gap: 8, alignItems: 'center' }}>
         <button type="button" onClick={handleApplyTemplate} disabled={submitting}>
