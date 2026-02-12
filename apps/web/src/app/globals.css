@@ -189,6 +189,28 @@ th, td {
   border-color: #881337;
 }
 
+.hub-action-links {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hub-action-links a {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #0f162c;
+  color: var(--text);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.hub-action-links a:hover {
+  background: #17203d;
+}
+
 .kpi-note {
   margin: 8px 0 0;
   color: var(--muted);

@@ -35,7 +35,11 @@ export default async function ReleaseHubPage() {
             demo: <span className={`status-pill ${demoOk ? 'status-pill-ok' : 'status-pill-warn'}`}>{demoOk ? 'ok' : `missing ${missing.length}`}</span>
           </p>
           {!demoOk && missing.length > 0 ? <p className="kpi-note">누락: {missing.join(', ')}</p> : null}
-          <p className="kpi-note"><Link href="/demo-status">Demo Status 이동</Link></p>
+          <div className="hub-action-links" style={{ marginTop: 8 }}>
+            <Link href="/demo-status">Demo Status</Link>
+            <Link href="/release-signoff">Release Signoff</Link>
+            <Link href="/dashboard">Dashboard</Link>
+          </div>
         </article>
 
         <article className="kpi-card">
