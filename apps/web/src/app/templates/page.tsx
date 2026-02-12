@@ -3,8 +3,10 @@ import { TemplateQuickstart } from '../../components/template-quickstart';
 import { TemplatesContent } from '../../components/templates-content';
 import { getList } from '../../lib/api';
 
+type GuildTemplateType = 'raid' | 'esports' | 'community' | 'custom';
+
 type GuildTemplate = {
-  type: string;
+  type: GuildTemplateType;
   name: string;
   description: string;
   defaults: {
