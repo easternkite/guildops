@@ -36,6 +36,10 @@ export class UeventsController {
         enableWeeklyDigest?: boolean;
         createDefaultAnnouncement?: boolean;
       };
+      guard?: {
+        rollbackOnFailure?: boolean;
+        dryRun?: boolean;
+      };
     },
   ) {
     return this.service.applyTemplateFollowup(body);
