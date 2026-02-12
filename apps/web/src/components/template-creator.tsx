@@ -11,6 +11,13 @@ type GuildTemplateDefaults = {
   announcementStyle: string;
 };
 
+type GuildTemplate = {
+  type: GuildTemplateType;
+  name: string;
+  description: string;
+  defaults: GuildTemplateDefaults;
+};
+
 type CustomTemplate = {
   id: string;
   type: GuildTemplateType;
