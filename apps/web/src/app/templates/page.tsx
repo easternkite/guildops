@@ -1,8 +1,6 @@
-'use client';
-
 import { Suspense } from 'react';
 import { TemplateQuickstart } from '../../components/template-quickstart';
-import { TemplateCreator, CustomTemplatesList } from '../../components/template-creator';
+import { TemplatesContent } from '../../components/templates-content';
 import { getList } from '../../lib/api';
 
 type GuildTemplate = {
@@ -17,54 +15,8 @@ type GuildTemplate = {
   };
 };
 
-type CustomTemplate = {
-  id: string;
-  type: string;
-  name: string;
-  description: string;
-  defaults: {
-    roles: string[];
-    eventCadence: string;
-    attendancePolicy: string;
-    announcementStyle: string;
-  };
-  createdAt: string;
-};
-
-const STORAGE_KEY = 'guildops-custom-templates';
-
-function loadCustomTemplates(): CustomTemplate[] {
-  try {
-    const saved = globalThis.localStorage.getItem(STORAGE_KEY);
-    if (!saved) return [];
-    return JSON.parse(saved) as CustomTemplate[];
-  } catch {
-    return [];
-  }
-}
-
-function deleteCustomTemplate(id: string) {
-  const templates = loadCustomTemplates();
-  const filtered = templates.filter((t) => t.id !== id);
-  globalThis.localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-}
-
 export default async function TemplatesPage() {
   const templates = await getList('guilds/templates').catch(() => [] as GuildTemplate[]);
-  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>(loadCustomTemplates());
-
-  function handleRefreshCustom() {
-    setCustomTemplates(loadCustomTemplates());
-  }
-
-  function handleTemplateCreated() {
-    setCustomTemplates(loadCustomTemplates());
-  }
-
-  function handleDeleteTemplate(id: string) {
-    deleteCustomTemplate(id);
-    setCustomTemplates(loadCustomTemplates());
-  }
 
   return (
     <main>
@@ -93,33 +45,9 @@ export default async function TemplatesPage() {
         )}
       </section>
 
-      <section style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-        <Suspense fallback={<p className="kpi-note">사용자 템플릿을 불러오는 중...</p>}>
-          <TemplateCreator templates={templates} onCreated={handleTemplateCreated} onEditRequested={undefined} />
-        </Suspense>
-      </section>
-
-      <section style={{ marginTop: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h3 style={{ marginTop: 0 }}>사용자 템플릿</h3>
-          <button type="button" onClick={handleRefreshCustom}>
-            새로고침
-          </button>
-        </div>
-        {customTemplates.length === 0 ? (
-          <p className="kpi-note" style={{ marginTop: 8 }}>
-            저장된 사용자 템플릿이 없습니다.
-          </p>
-        ) : (
-          <Suspense fallback={<p className="kpi-note">사용자 템플릿을 불러오는 중...</p>}>
-            <CustomTemplatesList
-              templates={customTemplates}
-              onEdit={handleTemplateCreated}
-              onDelete={handleDeleteTemplate}
-            />
-          </Suspense>
-        )}
-      </section>
+      <Suspense fallback={<p className="kpi-note">사용자 템플릿을 불러오는 중...</p>}>
+        <TemplatesContent templates={templates} />
+      </Suspense>
 
       <Suspense fallback={null}>
         <TemplateQuickstart templates={templates} />
