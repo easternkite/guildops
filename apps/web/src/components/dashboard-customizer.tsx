@@ -13,9 +13,13 @@ type Props = {
   activeMembers: number;
   recentEventTitle: string;
   recentEventAt: string;
+  totalAnnouncements: number;
+  totalAnnouncementViews: number;
+  avgAnnouncementViews: number;
   recentAnnouncementTitle: string;
   recentAnnouncementAt: string;
-  totalAnnouncements: number;
+  mostViewedAnnouncement: string;
+  mostViewedCount: number;
   healthStatus: boolean;
   checklistStatus: boolean;
   checklistMissing: string[];
@@ -26,7 +30,7 @@ const WIDGETS: Array<{ key: WidgetKey; label: string }> = [
   { key: 'checkin', label: '체크인율' },
   { key: 'members', label: '활성 멤버' },
   { key: 'event', label: '최근 이벤트' },
-  { key: 'announcements', label: '공지 현황' },
+  { key: 'announcements', label: '공지 도달' },
   { key: 'health', label: '운영 상태' },
   { key: 'readiness', label: '릴리즈 readiness' },
 ];
@@ -123,15 +127,21 @@ export function DashboardCustomizer(props: Props) {
 
         {enabledSet.has('announcements') ? (
           <article className="kpi-card">
-            <h3>공지 현황</h3>
-            <p className="kpi-value">{props.totalAnnouncements}</p>
-            <p className="kpi-note">총 공지 수</p>
-            {props.recentAnnouncementTitle !== '공지 없음' ? (
+            <h3>공지 도달</h3>
+            <p className="kpi-value">{props.totalAnnouncementViews}</p>
+            <p className="kpi-note">총 조회수 ({props.totalAnnouncements}개 공지)</p>
+            {props.totalAnnouncements > 0 && (
               <>
-                <p className="kpi-value kpi-value-small">{props.recentAnnouncementTitle}</p>
-                <p className="kpi-note">{props.recentAnnouncementAt}</p>
+                <p className="kpi-value kpi-value-small">{props.avgAnnouncementViews}</p>
+                <p className="kpi-note">평균 조회수</p>
+                {props.mostViewedAnnouncement !== '공지 없음' ? (
+                  <>
+                    <p className="kpi-value kpi-value-small">{props.mostViewedAnnouncement}</p>
+                    <p className="kpi-note">최다 조회 ({props.mostViewedCount}회)</p>
+                  </>
+                ) : null}
               </>
-            ) : null}
+            )}
           </article>
         ) : null}
 
