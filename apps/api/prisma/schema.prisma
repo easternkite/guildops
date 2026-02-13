@@ -97,4 +97,10 @@ model AuditLog {
   targetType String
   targetId   String
   createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([actor])
+  @@index([action])
+  @@index([targetType, targetId])
+  @@index([actor, action, createdAt])
 }
