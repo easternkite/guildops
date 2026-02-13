@@ -9,6 +9,7 @@ import { UauditUlogsModule } from './modules/audit-logs/audit-logs.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { PlansModule } from './modules/plans/plans.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     AttendanceModule,
     AuthModule,
     NotificationsModule,
+    PlansModule,
   ],
 })
 export class AppModule {}
