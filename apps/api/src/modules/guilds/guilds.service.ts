@@ -180,6 +180,63 @@ export class UguildsService {
     return { cadence };
   }
 
+  async getReminderAutomationPlan(guildId: string) {
+    const guild = await this.prisma.guild.findUnique({
+      where: { id: guildId },
+      include: {
+        events: {
+          orderBy: { startsAt: 'asc' },
+          take: 10,
+          select: { id: true, title: true, startsAt: true, status: true },
+        },
+      },
+    });
+
+    if (!guild) {
+      throw new NotFoundException(`Guild ${guildId} not found`);
+    }
+
+    const activeEvents = guild.events.filter((event) => event.status !== 'cancelled');
+
+    return {
+      guild: { id: guild.id, name: guild.name },
+      generatedAt: new Date().toISOString(),
+      rules: [
+        {
+          key: 'event_t_minus_24h',
+          enabled: true,
+          description: '이벤트 24시간 전 리마인더',
+          when: '-24h',
+          channel: 'discord#announcements',
+        },
+        {
+          key: 'event_t_minus_1h',
+          enabled: true,
+          description: '이벤트 1시간 전 출석 체크 리마인더',
+          when: '-1h',
+          channel: 'discord#attendance',
+        },
+        {
+          key: 'event_t_plus_2h_no_checkin',
+          enabled: true,
+          description: '이벤트 시작 후 2시간 내 미체크인 멤버 리마인더',
+          when: '+2h',
+          channel: 'dm',
+        },
+      ],
+      upcoming: activeEvents.slice(0, 3).map((event) => ({
+        eventId: event.id,
+        title: event.title,
+        startsAt: event.startsAt,
+        reminders: [
+          { key: 'event_t_minus_24h', scheduledAt: new Date(event.startsAt.getTime() - 24 * 60 * 60 * 1000) },
+          { key: 'event_t_minus_1h', scheduledAt: new Date(event.startsAt.getTime() - 60 * 60 * 1000) },
+          { key: 'event_t_plus_2h_no_checkin', scheduledAt: new Date(event.startsAt.getTime() + 2 * 60 * 60 * 1000) },
+        ],
+      })),
+    };
+  }
+
   async importTemplate(guildId: string, template: ExportedTemplate) {
     // 길드 조회
     const guild = await this.prisma.guild.findUnique({

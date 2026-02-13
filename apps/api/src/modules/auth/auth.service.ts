@@ -61,12 +61,14 @@ export class AuthService {
       orderBy: { guild: { name: 'asc' } },
     });
 
-    return members.map((member) => ({
-      guildId: member.guild.id,
-      guildName: member.guild.name,
-      role: member.role,
-      active: member.active,
-    }));
+    return members
+      .filter((member) => member.guild)
+      .map((member) => ({
+        guildId: member.guild!.id,
+        guildName: member.guild!.name,
+        role: member.role,
+        active: member.active,
+      }));
   }
 
   async linkUserToMember(userId: string, guildId: string, role?: string) {
