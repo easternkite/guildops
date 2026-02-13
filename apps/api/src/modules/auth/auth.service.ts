@@ -10,6 +10,20 @@ type DiscordUserInput = {
   avatar?: string;
 };
 
+type GuildMembership = {
+  guildId: string;
+  guildName: string;
+  role: string;
+  active: boolean;
+};
+
+type JwtPayload = {
+  sub: string;
+  discordId: string;
+  username: string;
+  guilds?: GuildMembership[];
+};
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -36,24 +50,105 @@ export class AuthService {
     });
   }
 
-  issueToken(user: { id: string; discordId: string; username: string }) {
-    return this.jwtService.sign({ sub: user.id, discordId: user.discordId, username: user.username });
+  async getUserGuildMemberships(userId: string): Promise<GuildMembership[]> {
+    const members = await this.prisma.member.findMany({
+      where: { userId, active: true },
+      include: {
+        guild: {
+          select: { id: true, name: true },
+        },
+      },
+      orderBy: { guild: { name: 'asc' } },
+    });
+
+    return members.map((member) => ({
+      guildId: member.guild.id,
+      guildName: member.guild.name,
+      role: member.role,
+      active: member.active,
+    }));
   }
 
-  async getUserFromBearer(authHeader?: string) {
+  async linkUserToMember(userId: string, guildId: string, role?: string) {
+    // Find the user
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException(`User ${userId} does not exist`);
+    }
+
+    // Find an existing member in this guild without a userId (created before OAuth link)
+    const existingMember = await this.prisma.member.findFirst({
+      where: {
+        guildId,
+        userId: null,
+        OR: role
+          ? [
+              { nickname: { contains: user.username } },
+              { nickname: { contains: user.discriminator || '' } },
+            ]
+          : [],
+      },
+    });
+
+    if (existingMember) {
+      // Link the user to the existing member
+      return this.prisma.member.update({
+        where: { id: existingMember.id },
+        data: {
+          userId,
+          ...(role && { role }),
+        },
+      });
+    }
+
+    // No existing member, this is expected for users not yet added to a guild
+    return null;
+  }
+
+  async issueToken(user: { id: string; discordId: string; username: string }, includeGuilds: boolean = false) {
+    const payload: JwtPayload = {
+      sub: user.id,
+      discordId: user.discordId,
+      username: user.username,
+    };
+
+    if (includeGuilds) {
+      payload.guilds = await this.getUserGuildMemberships(user.id);
+    }
+
+    return this.jwtService.sign(payload);
+  }
+
+  async getUserFromBearer(authHeader?: string, includeGuilds: boolean = false) {
     if (!authHeader?.startsWith('Bearer ')) throw new UnauthorizedException('Missing bearer token');
     const token = authHeader.slice('Bearer '.length);
 
-    let payload: { sub: string };
+    let payload: JwtPayload;
     try {
-      payload = await this.jwtService.verifyAsync(token);
+      payload = await this.jwtService.verifyAsync(token) as JwtPayload;
     } catch {
       throw new UnauthorizedException('Invalid token');
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
     if (!user) throw new UnauthorizedException('User not found');
+
     return user;
+  }
+
+  async getUserContext(authHeader?: string) {
+    const user = await this.getUserFromBearer(authHeader);
+    const guilds = await this.getUserGuildMemberships(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        discordId: user.discordId,
+        username: user.username,
+        avatar: user.avatar,
+      },
+      guilds,
+    };
   }
 
   async getDiscordRoleSyncPreview(guildId: string) {

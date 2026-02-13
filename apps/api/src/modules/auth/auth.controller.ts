@@ -20,7 +20,8 @@ export class AuthController {
     if (!profile?.discordId) throw new UnauthorizedException('OAuth profile missing');
 
     const user = await this.authService.upsertFromDiscord(profile);
-    const token = this.authService.issueToken(user);
+    // Include guild context in token
+    const token = await this.authService.issueToken(user, true);
     const webOrigin = process.env.WEB_ORIGIN ?? 'http://localhost:3000';
 
     return res.redirect(`${webOrigin}/?token=${encodeURIComponent(token)}`);
@@ -30,13 +31,40 @@ export class AuthController {
   @Post('token')
   async tokenForDev(@Body() body: TokenLoginDto) {
     const user = await this.authService.upsertFromDiscord(body);
-    return { token: this.authService.issueToken(user), user };
+    return { token: await this.authService.issueToken(user, true), user };
   }
 
   @Get('me')
   async me(@Headers('authorization') authorization?: string) {
+    return this.authService.getUserContext(authorization);
+  }
+
+  @Get('me/guilds')
+  async meGuilds(@Headers('authorization') authorization?: string) {
     const user = await this.authService.getUserFromBearer(authorization);
-    return { user };
+    const guilds = await this.authService.getUserGuildMemberships(user.id);
+    return {
+      userId: user.id,
+      username: user.username,
+      guilds,
+    };
+  }
+
+  @Post('link-member')
+  async linkMember(@Body() body: { guildId: string; role?: string }, @Headers('authorization') authorization: string) {
+    const user = await this.authService.getUserFromBearer(authorization);
+    const result = await this.authService.linkUserToMember(user.id, body.guildId, body.role);
+
+    if (result) {
+      // Reload guilds after linking
+      const guilds = await this.authService.getUserGuildMemberships(user.id);
+      return { success: true, member: result, guilds };
+    }
+
+    return {
+      success: false,
+      message: 'No unlinked member found in guild. Create member first.',
+    };
   }
 
   @Get('discord/health')

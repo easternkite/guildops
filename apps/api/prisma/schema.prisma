@@ -25,15 +25,18 @@ model User {
   avatar         String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  members        Member[] @relation("MemberUser")
 }
 
 model Member {
   id          String            @id @default(cuid())
   guildId     String
+  userId      String?
   nickname    String
   role        String
   active      Boolean           @default(true)
   guild       Guild             @relation(fields: [guildId], references: [id])
+  user        User?             @relation("MemberUser", fields: [userId], references: [id])
   checkIns    AttendanceCheckIn[]
 }
 
