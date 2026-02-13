@@ -8,6 +8,7 @@ import { UrewardsModule } from './modules/rewards/rewards.module';
 import { UauditUlogsModule } from './modules/audit-logs/audit-logs.module';
 import { AttendanceModule } from './modules/attendance/attendance.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AuthModule } from './modules/auth/auth.module';
     UauditUlogsModule,
     AttendanceModule,
     AuthModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
