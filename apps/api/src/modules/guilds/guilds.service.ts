@@ -237,6 +237,47 @@ export class UguildsService {
     };
   }
 
+  async syncReminderSchedules(guildId: string) {
+    const plan = await this.getReminderAutomationPlan(guildId);
+
+    const jobs = plan.upcoming.flatMap((event) =>
+      event.reminders.map((reminder) => ({
+        jobKey: `${guildId}:${event.eventId}:${reminder.key}`,
+        guildId,
+        eventId: event.eventId,
+        eventTitle: event.title,
+        ruleKey: reminder.key,
+        scheduledAt: reminder.scheduledAt,
+      }))
+    );
+
+    const now = Date.now();
+    const next24h = now + 24 * 60 * 60 * 1000;
+
+    const create = jobs.filter((job) => job.scheduledAt.getTime() >= now);
+    const urgent = create.filter((job) => job.scheduledAt.getTime() <= next24h);
+
+    await this.prisma.auditLog.create({
+      data: {
+        actor: 'reminder-engine',
+        action: 'reminder_schedule_synced',
+        targetType: 'guild',
+        targetId: guildId,
+      },
+    });
+
+    return {
+      guild: plan.guild,
+      syncedAt: new Date().toISOString(),
+      stats: {
+        totalCandidates: jobs.length,
+        create: create.length,
+        urgentNext24h: urgent.length,
+      },
+      jobs: create,
+    };
+  }
+
   async importTemplate(guildId: string, template: ExportedTemplate) {
     // 길드 조회
     const guild = await this.prisma.guild.findUnique({

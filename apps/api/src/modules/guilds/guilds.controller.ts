@@ -30,6 +30,11 @@ export class UguildsController {
     return this.service.getReminderAutomationPlan(id);
   }
 
+  @Post(':id/reminder-sync')
+  syncReminderPlan(@Param('id') id: string) {
+    return this.service.syncReminderSchedules(id);
+  }
+
   @Post(':id/import-template')
   importTemplate(@Param('id') id: string, @Body() template: any) {
     return this.service.importTemplate(id, template);
