@@ -35,6 +35,14 @@ export class UguildsController {
     return this.service.syncReminderSchedules(id);
   }
 
+  @Post(':id/reminder-dispatch')
+  dispatchReminders(
+    @Param('id') id: string,
+    @Body() body: { webhookUrl: string; dryRun?: boolean; maxToSend?: number },
+  ) {
+    return this.service.dispatchReminders(id, body);
+  }
+
   @Post(':id/import-template')
   importTemplate(@Param('id') id: string, @Body() template: any) {
     return this.service.importTemplate(id, template);

@@ -216,6 +216,24 @@ export function RemindersManager() {
           >
             Send test notification
           </button>
+
+          <button
+            className="button"
+            disabled={!validGuildId || !!busy || webhookUrl.trim().length === 0}
+            onClick={() =>
+              run('Dispatch urgent', async () => {
+                const res = await fetch(`/api/guilds/${guildId}/reminder-dispatch`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ webhookUrl, dryRun: false, maxToSend: 5 }),
+                });
+                if (!res.ok) throw new Error(`dispatch failed: ${res.status}`);
+                return res.json();
+              })
+            }
+          >
+            Dispatch urgent (24h)
+          </button>
         </div>
       </div>
 

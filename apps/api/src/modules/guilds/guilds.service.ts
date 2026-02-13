@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 type GuildTemplateType = 'raid' | 'esports' | 'community';
 
@@ -70,7 +71,10 @@ const GUILD_TEMPLATES: GuildTemplate[] = [
 
 @Injectable()
 export class UguildsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   findAll() {
     return this.prisma.guild.findMany({ orderBy: { name: 'asc' } });
@@ -275,6 +279,52 @@ export class UguildsService {
         urgentNext24h: urgent.length,
       },
       jobs: create,
+    };
+  }
+
+  async dispatchReminders(
+    guildId: string,
+    input: { webhookUrl: string; dryRun?: boolean; maxToSend?: number },
+  ) {
+    const sync = await this.syncReminderSchedules(guildId);
+
+    const maxToSend = input.maxToSend ?? 5;
+    const urgentJobs = (sync.jobs ?? []).filter((job: any) => {
+      const t = new Date(job.scheduledAt).getTime();
+      return t <= Date.now() + 24 * 60 * 60 * 1000;
+    });
+
+    const toSend = urgentJobs.slice(0, maxToSend);
+
+    if (input.dryRun) {
+      return {
+        ok: true,
+        dryRun: true,
+        guild: sync.guild,
+        candidates: urgentJobs.length,
+        willSend: toSend.length,
+        jobs: toSend,
+      };
+    }
+
+    const results = [] as any[];
+    for (const job of toSend) {
+      const content = `[GuildOps][리마인더] ${job.ruleKey} · ${job.eventTitle} · at=${new Date(job.scheduledAt).toISOString()}`;
+      const res = await this.notifications.sendDiscordWebhook({
+        webhookUrl: input.webhookUrl,
+        content,
+        guildId,
+        kind: 'reminder-dispatch',
+        maxRetries: 3,
+      });
+      results.push({ jobKey: job.jobKey, ...res });
+    }
+
+    return {
+      ok: results.every((r) => r.ok),
+      guild: sync.guild,
+      sent: results.length,
+      results,
     };
   }
 
