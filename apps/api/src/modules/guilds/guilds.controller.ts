@@ -25,6 +25,11 @@ export class UguildsController {
     return this.service.exportTemplate(id);
   }
 
+  @Post(':id/import-template')
+  importTemplate(@Param('id') id: string, @Body() template: any) {
+    return this.service.importTemplate(id, template);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);

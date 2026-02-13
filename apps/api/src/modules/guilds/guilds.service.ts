@@ -180,6 +180,107 @@ export class UguildsService {
     return { cadence };
   }
 
+  async importTemplate(guildId: string, template: ExportedTemplate) {
+    // 길드 조회
+    const guild = await this.prisma.guild.findUnique({
+      where: { id: guildId },
+    });
+
+    if (!guild) {
+      throw new NotFoundException(`Guild ${guildId} not found`);
+    }
+
+    // 템플릿 검증
+    if (!template.roles || !Array.isArray(template.roles)) {
+      throw new BadRequestException('Template must have a roles array');
+    }
+
+    if (!template.name || template.name.trim() === '') {
+      throw new BadRequestException('Template must have a name');
+    }
+
+    // 템플릿 적용 (트랜잭션)
+    const appliedResult = await this.prisma.$transaction(async (tx) => {
+      const applied: {
+        rolesCreated: number;
+        announcementsCreated: number;
+        auditLogsCreated: number;
+      } = {
+        rolesCreated: 0,
+        announcementsCreated: 0,
+        auditLogsCreated: 0,
+      };
+
+      // 템플릿의 역할을 멤버 예시로 생성 (필요한 경우)
+      // Note: 실제 멤버 생성은 Discord OAuth 연동 시 수행
+      // 여기서는 템플릿 역할을 저장하기 위한 placeholder 멤버 생성
+      for (const role of template.roles) {
+        if (role && role.trim() !== '') {
+          // 이미 존재하는 역할 확인
+          const existingMember = await tx.member.findFirst({
+            where: { guildId, role },
+          });
+
+          if (!existingMember) {
+            await tx.member.create({
+              data: {
+                guildId,
+                nickname: `[TEMPLATE] ${role}`,
+                role,
+                active: false, // 템플릿 역할은 비활성으로 표시
+              },
+            });
+            applied.rolesCreated++;
+          }
+        }
+      }
+
+      // 출석 정책 공지 생성
+      if (template.attendancePolicy && template.attendancePolicy.trim() !== '') {
+        await tx.announcement.create({
+          data: {
+            guildId,
+            title: `[${template.name}] 출석 정책`,
+            content: template.attendancePolicy,
+          },
+        });
+        applied.announcementsCreated++;
+      }
+
+      // 공지 스타일 공지 생성
+      if (template.announcementStyle && template.announcementStyle.trim() !== '') {
+        await tx.announcement.create({
+          data: {
+            guildId,
+            title: `[${template.name}] 공지 스타일 가이드`,
+            content: template.announcementStyle,
+          },
+        });
+        applied.announcementsCreated++;
+      }
+
+      // 감사 로그 생성
+      await tx.auditLog.create({
+        data: {
+          actor: 'template-import',
+          action: 'template_imported',
+          targetType: 'guild',
+          targetId: guildId,
+        },
+      });
+      applied.auditLogsCreated++;
+
+      return applied;
+    });
+
+    return {
+      guildId,
+      templateName: template.name,
+      importedAt: new Date().toISOString(),
+      ...appliedResult,
+    };
+  }
+
   async findOne(id: string) {
     const found = await this.prisma.guild.findUnique({ where: { id } });
     if (!found) throw new NotFoundException(`Guild ${id} not found`);
