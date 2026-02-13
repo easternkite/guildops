@@ -21,6 +21,7 @@ const navItems = [
   { href: '/audit-logs', label: 'Audit Logs' },
   { href: '/invite-onboarding', label: 'Invite Flow' },
   { href: '/templates', label: 'Templates' },
+  { href: '/reminders', label: 'Reminders' },
 ];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

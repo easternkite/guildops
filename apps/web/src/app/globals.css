@@ -116,6 +116,48 @@ input, select, button {
   background: #121932;
   color: var(--text);
 }
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #17203d;
+  color: var(--text);
+}
+
+.card {
+  background: #111934;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.muted { color: var(--muted); font-size: 12px; }
+
+.notice {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  background: #0f162c;
+}
+
+.notice.ok {
+  border-color: #14532d;
+  background: #052e16;
+  color: #86efac;
+}
+
+.notice.error {
+  border-color: #881337;
+  background: #3f0d17;
+  color: #fecdd3;
+}
+
 button { cursor: pointer; }
 button:hover { filter: brightness(1.08); }
 
