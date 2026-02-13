@@ -11,6 +11,21 @@ type DemoChecklist = {
   checks?: Record<string, boolean>;
   missing?: string[];
 };
+type AnnouncementStats = {
+  total: number;
+  totalViews: number;
+  recent: Array<{
+    id: string;
+    title: string;
+    createdAt: Date;
+    viewCount: number;
+  }>;
+  mostViewed: Array<{
+    id: string;
+    title: string;
+    viewCount: number;
+  }>;
+};
 
 type ProbeResult<T> = {
   data: T;
@@ -37,10 +52,13 @@ async function probe<T>(runner: () => Promise<T>, fallback: T): Promise<ProbeRes
 }
 
 export default async function DashboardPage({ searchParams }: { searchParams?: { guildId?: string } }) {
-  const [attendanceProbe, membersProbe, eventsProbe, healthProbe, checklistProbe] = await Promise.all([
+  const guildId = searchParams?.guildId || 'guild-default';
+
+  const [attendanceProbe, membersProbe, eventsProbe, announcementsStatsProbe, healthProbe, checklistProbe] = await Promise.all([
     probe(() => getList('attendance'), [] as Attendance[]),
     probe(() => getList('members'), [] as Member[]),
     probe(() => getList('events'), [] as Event[]),
+    probe(() => fetch(`/api/announcements/stats?guildId=${guildId}`).then(r => r.ok ? r.json() : null), null as AnnouncementStats | null),
     probe(() => getList('auth/discord/health'), null as Health | null),
     probe(() => getList('auth/demo/checklist-health'), null as DemoChecklist | null),
   ]);
@@ -48,12 +66,12 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
   const attendance = attendanceProbe.data;
   const members = membersProbe.data;
   const events = eventsProbe.data;
+  const announcementStats = announcementsStatsProbe.data;
   const health = healthProbe.data;
   const checklist = checklistProbe.data;
 
-  const guildId = searchParams?.guildId;
-  const scopedMembers = guildId ? members.filter((member: Member) => member.guildId === guildId) : members;
-  const scopedEvents = guildId ? events.filter((event: Event & { guildId?: string }) => event.guildId === guildId) : events;
+  const scopedMembers = guildId !== 'guild-default' ? members.filter((member: Member) => member.guildId === guildId) : members;
+  const scopedEvents = guildId !== 'guild-default' ? events.filter((event: Event & { guildId?: string }) => event.guildId === guildId) : events;
 
   const attendanceCount = attendance.length;
   const totalCheckIns = attendance.reduce((sum: number, item: Attendance) => sum + (item.checkInCount ?? 0), 0);
@@ -66,6 +84,16 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     .sort((a: Event, b: Event) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .find((event: Event) => event.status !== 'done' && event.status !== 'closed');
 
+  const totalAnnouncements = announcementStats?.total ?? 0;
+  const totalAnnouncementViews = announcementStats?.totalViews ?? 0;
+  const avgAnnouncementViews = totalAnnouncements > 0 ? Math.round(totalAnnouncementViews / totalAnnouncements) : 0;
+  const recentAnnouncement = announcementStats?.recent?.[0]?.title ?? '공지 없음';
+  const recentAnnouncementAt = announcementStats?.recent?.[0]?.createdAt
+    ? new Date(announcementStats.recent[0].createdAt).toLocaleString('ko-KR')
+    : '공지를 등록해 보세요';
+  const mostViewedAnnouncement = announcementStats?.mostViewed?.[0]?.title ?? '공지 없음';
+  const mostViewedCount = announcementStats?.mostViewed?.[0]?.viewCount ?? 0;
+
   const healthStatus = health?.ok ?? health?.status === 'ok';
   const checklistStatus = checklist?.ok === true;
   const checklistMissing = checklist?.missing ?? [];
@@ -77,7 +105,7 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
     ),
   );
 
-  const probes = [attendanceProbe, membersProbe, eventsProbe, healthProbe, checklistProbe];
+  const probes = [attendanceProbe, membersProbe, eventsProbe, announcementsStatsProbe, healthProbe, checklistProbe];
   const avgLatency = Math.round(probes.reduce((sum: number, probeResult: ProbeResult<unknown>) => sum + probeResult.latencyMs, 0) / probes.length);
   const errorCount = probes.filter((probeResult: ProbeResult<unknown>) => !probeResult.ok).length;
 
@@ -108,6 +136,13 @@ export default async function DashboardPage({ searchParams }: { searchParams?: {
         activeMembers={activeMembers}
         recentEventTitle={recentEvent ? recentEvent.title : '예정 이벤트 없음'}
         recentEventAt={recentEvent ? new Date(recentEvent.startsAt).toLocaleString('ko-KR') : '이벤트를 등록해 보세요'}
+        totalAnnouncements={totalAnnouncements}
+        totalAnnouncementViews={totalAnnouncementViews}
+        avgAnnouncementViews={avgAnnouncementViews}
+        recentAnnouncementTitle={recentAnnouncement}
+        recentAnnouncementAt={recentAnnouncementAt}
+        mostViewedAnnouncement={mostViewedAnnouncement}
+        mostViewedCount={mostViewedCount}
         healthStatus={healthStatus}
         checklistStatus={checklistStatus}
         checklistMissing={checklistMissing}

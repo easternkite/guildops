@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { ReleaseReadinessCard } from './release-readiness-card';
 
-type WidgetKey = 'attendance' | 'checkin' | 'members' | 'event' | 'health' | 'readiness';
+type WidgetKey = 'attendance' | 'checkin' | 'members' | 'event' | 'announcements' | 'health' | 'readiness';
 
 type Props = {
   guildOptions: string[];
@@ -13,6 +13,9 @@ type Props = {
   activeMembers: number;
   recentEventTitle: string;
   recentEventAt: string;
+  recentAnnouncementTitle: string;
+  recentAnnouncementAt: string;
+  totalAnnouncements: number;
   healthStatus: boolean;
   checklistStatus: boolean;
   checklistMissing: string[];
@@ -23,6 +26,7 @@ const WIDGETS: Array<{ key: WidgetKey; label: string }> = [
   { key: 'checkin', label: '체크인율' },
   { key: 'members', label: '활성 멤버' },
   { key: 'event', label: '최근 이벤트' },
+  { key: 'announcements', label: '공지 현황' },
   { key: 'health', label: '운영 상태' },
   { key: 'readiness', label: '릴리즈 readiness' },
 ];
@@ -114,6 +118,20 @@ export function DashboardCustomizer(props: Props) {
             <h3>최근 이벤트</h3>
             <p className="kpi-value kpi-value-small">{props.recentEventTitle}</p>
             <p className="kpi-note">{props.recentEventAt}</p>
+          </article>
+        ) : null}
+
+        {enabledSet.has('announcements') ? (
+          <article className="kpi-card">
+            <h3>공지 현황</h3>
+            <p className="kpi-value">{props.totalAnnouncements}</p>
+            <p className="kpi-note">총 공지 수</p>
+            {props.recentAnnouncementTitle !== '공지 없음' ? (
+              <>
+                <p className="kpi-value kpi-value-small">{props.recentAnnouncementTitle}</p>
+                <p className="kpi-note">{props.recentAnnouncementAt}</p>
+              </>
+            ) : null}
           </article>
         ) : null}
 
