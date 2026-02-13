@@ -15,6 +15,23 @@ type GuildTemplate = {
   };
 };
 
+type ExportedTemplate = {
+  id: string;
+  name: string;
+  type: 'custom';
+  roles: string[];
+  eventCadence: string;
+  attendancePolicy: string;
+  announcementStyle: string;
+  metadata: {
+    exportedAt: string;
+    guildId: string;
+    guildName: string;
+    memberCount: number;
+    eventCount: number;
+  };
+};
+
 const GUILD_TEMPLATES: GuildTemplate[] = [
   {
     type: 'raid',
@@ -70,6 +87,97 @@ export class UguildsService {
       throw new BadRequestException(`Unknown guild template type: ${type}`);
     }
     return template;
+  }
+
+  async exportTemplate(guildId: string): Promise<ExportedTemplate> {
+    // 길드 조회
+    const guild = await this.prisma.guild.findUnique({
+      where: { id: guildId },
+      include: {
+        members: {
+          where: { active: true },
+          select: { role: true },
+        },
+        events: {
+          orderBy: { startsAt: 'desc' },
+          take: 20,
+          select: { title: true, startsAt: true, status: true },
+        },
+      },
+    });
+
+    if (!guild) {
+      throw new NotFoundException(`Guild ${guildId} not found`);
+    }
+
+    // 역할 집계 (중복 제거)
+    const uniqueRoles = Array.from(
+      new Set(guild.members.map((member) => member.role))
+    ).sort();
+
+    // 이벤트 패턴 분석
+    const eventPattern = this.analyzeEventPattern(guild.events);
+
+    // 내보낼 템플릿 생성
+    const exported: ExportedTemplate = {
+      id: `exported-${guildId}-${Date.now()}`,
+      name: `${guild.name} 템플릿`,
+      type: 'custom',
+      roles: uniqueRoles,
+      eventCadence: eventPattern.cadence,
+      attendancePolicy: '기본 출석 정책',
+      announcementStyle: '기본 공지 스타일',
+      metadata: {
+        exportedAt: new Date().toISOString(),
+        guildId: guild.id,
+        guildName: guild.name,
+        memberCount: guild.members.length,
+        eventCount: guild.events.length,
+      },
+    };
+
+    return exported;
+  }
+
+  private analyzeEventPattern(events: { title: string; startsAt: Date; status: string }[]) {
+    if (events.length === 0) {
+      return { cadence: '이벤트 없음' };
+    }
+
+    // 간단한 패턴 분석: 이벤트 제목에서 키워드 추출
+    const titles = events.map((e) => e.title.toLowerCase());
+
+    const hasRaid = titles.some((t) => t.includes('raid') || t.includes('레이드'));
+    const hasScrim = titles.some((t) => t.includes('scrim') || t.includes('스크림'));
+    const hasMeeting = titles.some((t) => t.includes('meeting') || t.includes('회의'));
+    const hasEvent = titles.some((t) => t.includes('event') || t.includes('이벤트'));
+
+    let cadence = '정기 이벤트';
+
+    if (hasRaid && !hasScrim && !hasMeeting) {
+      cadence = '주간 레이드 중심';
+    } else if (!hasRaid && hasScrim && !hasMeeting) {
+      cadence = '주간 스크림 중심';
+    } else if (hasEvent) {
+      cadence = '주간 커뮤니티 이벤트';
+    } else if (hasMeeting) {
+      cadence = '정기 회의 포함';
+    }
+
+    // 이벤트 빈도 추정
+    const recentWeekEvents = events.filter(
+      (e) => e.startsAt > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    ).length;
+
+    if (recentWeekEvents >= 3) {
+      cadence += ' (주 3회 이상)';
+    } else if (recentWeekEvents >= 2) {
+      cadence += ' (주 2회)';
+    } else if (recentWeekEvents >= 1) {
+      cadence += ' (주 1회)';
+    }
+
+    return { cadence };
   }
 
   async findOne(id: string) {

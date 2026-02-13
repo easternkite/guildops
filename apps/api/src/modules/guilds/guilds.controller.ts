@@ -20,6 +20,11 @@ export class UguildsController {
     return this.service.getTemplate(type);
   }
 
+  @Get(':id/export-template')
+  exportTemplate(@Param('id') id: string) {
+    return this.service.exportTemplate(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
