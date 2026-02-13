@@ -82,12 +82,34 @@ model Announcement {
 }
 
 model Reward {
-  id        String   @id @default(cuid())
-  guildId   String
-  memberId  String
-  amount    Int
-  reason    String
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  guildId       String
+  memberId      String
+  amount        Int
+  reason        String
+  settlementId  String?
+  createdAt     DateTime @default(now())
+
+  @@index([guildId])
+  @@index([memberId])
+  @@index([settlementId])
+}
+
+model RewardSettlement {
+  id            String   @id @default(cuid())
+  guildId       String
+  seasonId      String?
+  startAt       DateTime
+  endAt         DateTime
+  totalMembers  Int
+  totalRewards  Int
+  totalPoints   Int
+  createdAt     DateTime @default(now())
+  settledAt     DateTime @default(now())
+
+  @@index([guildId])
+  @@index([seasonId])
+  @@index([settledAt])
 }
 
 model AuditLog {

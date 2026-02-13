@@ -17,6 +17,28 @@ type SeasonWindow = {
   endAt: Date;
 };
 
+type SettleRequest = {
+  guildId: string;
+  seasonId?: string;
+  startAt: string;
+  endAt: string;
+  note?: string;
+};
+
+type SettlementResult = {
+  settlementId: string;
+  guildId: string;
+  seasonId: string | null;
+  startAt: string;
+  endAt: string;
+  totalMembers: number;
+  totalRewards: number;
+  totalPoints: number;
+  members: RewardSummary[];
+  note: string;
+  settledAt: string;
+};
+
 @Injectable()
 export class UrewardsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -120,6 +142,141 @@ export class UrewardsService {
         contribution: 'sum(reward.amount)',
       },
       members: summary,
+    };
+  }
+
+  async settle(request: SettleRequest): Promise<SettlementResult> {
+    await this.ensureGuildExists(request.guildId);
+
+    const startAt = new Date(request.startAt);
+    const endAt = new Date(request.endAt);
+
+    if (Number.isNaN(startAt.getTime())) {
+      throw new BadRequestException('startAt is invalid');
+    }
+
+    if (Number.isNaN(endAt.getTime())) {
+      throw new BadRequestException('endAt is invalid');
+    }
+
+    if (startAt >= endAt) {
+      throw new BadRequestException('startAt must be before endAt');
+    }
+
+    const seasonWindow: SeasonWindow = {
+      seasonId: request.seasonId || `manual-${Date.now()}`,
+      startAt,
+      endAt,
+    };
+
+    const summary = await this.summarizeByGuild(request.guildId, seasonWindow);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      // Create settlement record
+      const settlement = await tx.rewardSettlement.create({
+        data: {
+          guildId: request.guildId,
+          seasonId: request.seasonId,
+          startAt,
+          endAt,
+          totalMembers: summary.members.length,
+          totalRewards: summary.members.filter((m) => m.totalPoints > 0).length,
+          totalPoints: summary.members.reduce((sum, m) => sum + m.totalPoints, 0),
+        },
+      });
+
+      // Create reward records for members with points
+      const rewardCreations = summary.members
+        .filter((member) => member.totalPoints > 0)
+        .map((member) =>
+          tx.reward.create({
+            data: {
+              guildId: request.guildId,
+              memberId: member.memberId,
+              amount: member.totalPoints,
+              reason: request.note || `Settlement for ${seasonWindow.seasonId}`,
+              settlementId: settlement.id,
+            },
+          })
+        );
+
+      await Promise.all(rewardCreations);
+
+      return {
+        settlementId: settlement.id,
+        guildId: request.guildId,
+        seasonId: request.seasonId || null,
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+        totalMembers: settlement.totalMembers,
+        totalRewards: settlement.totalRewards,
+        totalPoints: settlement.totalPoints,
+        members: summary.members,
+        note: request.note || '',
+        settledAt: settlement.settledAt.toISOString(),
+      };
+    });
+
+    return result;
+  }
+
+  async getSettlements(query: { guildId?: string; seasonId?: string; limit?: number } = {}) {
+    const limit = Math.max(1, Math.min(query.limit ?? 20, 100));
+
+    const where: { guildId?: string; seasonId?: string } = {};
+    if (query.guildId) {
+      where.guildId = query.guildId;
+    }
+    if (query.seasonId) {
+      where.seasonId = query.seasonId;
+    }
+
+    const settlements = await this.prisma.rewardSettlement.findMany({
+      where,
+      orderBy: { settledAt: 'desc' },
+      take: limit,
+    });
+
+    return {
+      count: settlements.length,
+      items: settlements,
+    };
+  }
+
+  async getSettlement(id: string) {
+    const settlement = await this.prisma.rewardSettlement.findUnique({
+      where: { id },
+    });
+
+    if (!settlement) {
+      throw new NotFoundException(`Settlement ${id} not found`);
+    }
+
+    // Get rewards for this settlement
+    const rewards = await this.prisma.reward.findMany({
+      where: { settlementId: id },
+      orderBy: { amount: 'desc' },
+    });
+
+    // Get member nicknames
+    const memberIds = Array.from(new Set(rewards.map((r) => r.memberId)));
+    const members = await this.prisma.member.findMany({
+      where: { id: { in: memberIds } },
+      select: { id: true, nickname: true },
+    });
+
+    const memberNicknameMap = new Map(members.map((m) => [m.id, m.nickname]));
+
+    const memberRewards = rewards.map((reward) => ({
+      memberId: reward.memberId,
+      nickname: memberNicknameMap.get(reward.memberId) || 'Unknown',
+      amount: reward.amount,
+      reason: reward.reason,
+    }));
+
+    return {
+      ...settlement,
+      rewards: memberRewards,
     };
   }
 

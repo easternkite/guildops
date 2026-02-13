@@ -45,6 +45,29 @@ export class UrewardsController {
     return this.service.summarizeByGuild(guildId, seasonWindow);
   }
 
+  @Get('settlements')
+  getSettlements(
+    @Query('guildId') guildId?: string,
+    @Query('seasonId') seasonId?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getSettlements({
+      guildId,
+      seasonId,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+  }
+
+  @Get('settlements/:id')
+  getSettlement(@Param('id') id: string) {
+    return this.service.getSettlement(id);
+  }
+
+  @Post('settle')
+  settle(@Body() body: any) {
+    return this.service.settle(body);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.service.findOne(id);
